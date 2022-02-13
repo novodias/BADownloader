@@ -1,5 +1,6 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Firefox;
 
 using System.Runtime.InteropServices;
 
@@ -14,61 +15,106 @@ class Program
         pro.MainAsync().GetAwaiter().GetResult();
     }
 
-    public static string GetEpisodeUrl(string url, int index)
-    {
-        if (index > 0 && index <= 9)
-        {
-            return url + "/episodio-0" + Convert.ToString(index) + "/download";
-        }
-        else
-        {
-            return url + "/episodio-" + Convert.ToString(index) + "/download";
-        }
-    }
+    HtmlWeb? web;
+    ChromeOptions? chrome;
+    FirefoxOptions? firefox;
 
     public async Task MainAsync()
     {
         System.Console.Title = "Better Animes Downloader";
+        System.Console.WriteLine("Navegadores suportados: Chrome e Opera.");
         System.Console.WriteLine("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin");
         System.Console.WriteLine("Insira url do anime: ");
         string url = Console.ReadLine() ?? throw new Exception("Url não pode ficar vazio");
 
-        ChromeOptions options = new ChromeOptions();
-
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             string location;
+            string[] chromeloc = 
+            {
+                @"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
+                @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
+                @"%LocalAppData%\Google\Chrome\Application\chrome.exe"
+            };
 
-            if (File.Exists(@"%ProgramFiles%\Google\Chrome\Application\chrome.exe"))
+            string[] firefoxloc = 
             {
-                location = @"%ProgramFiles%\Google\Chrome\Application\chrome.exe";
+                @"%LocalAppData%\Mozilla Firefox\firefox.exe",
+                @"%ProgramFiles%\Mozilla Firefox\firefox.exe",
+                @"%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe"
+            };
+
+            if (File.Exists(chromeloc[0]) || File.Exists(chromeloc[1]) || File.Exists(chromeloc[2]))
+            {
+                if (File.Exists(chromeloc[0]))
+                    location = chromeloc[0];
+                else if (File.Exists(chromeloc[1]))
+                    location = chromeloc[1];
+                else
+                    location = chromeloc[2];
+                
+                chrome = new ChromeOptions();
+
+                chrome.BinaryLocation = location;
+                chrome.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
+
+                chrome.SetLoggingPreference(LogType.Browser, LogLevel.Off);
+                chrome.SetLoggingPreference(LogType.Client, LogLevel.Off);
+                chrome.SetLoggingPreference(LogType.Driver, LogLevel.Off);
+                chrome.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
+                chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
             }
-            else if (File.Exists(@"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"))
+            else if (File.Exists(firefoxloc[0]) || File.Exists(firefoxloc[1]) || File.Exists(firefoxloc[2]))
             {
-                location = @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe";
+                if (File.Exists(firefoxloc[0]))
+                    location = firefoxloc[0];
+                else if (File.Exists(firefoxloc[1]))
+                    location = firefoxloc[1];
+                else
+                    location = firefoxloc[2];
+
+                firefox = new FirefoxOptions();
+
+                firefox.BrowserExecutableLocation = location;
+                firefox.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
+
+                firefox.SetLoggingPreference(LogType.Browser, LogLevel.Off);
+                firefox.SetLoggingPreference(LogType.Client, LogLevel.Off);
+                firefox.SetLoggingPreference(LogType.Driver, LogLevel.Off);
+                firefox.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
+                firefox.SetLoggingPreference(LogType.Server, LogLevel.Off);
             }
             else
             {
-                location = @"%LocalAppData%\Google\Chrome\Application\chrome.exe";
+                System.Console.WriteLine("Não foi encontrado o Chrome e nem o Opera, por favor insira o caminho do executável:");
+                System.Console.WriteLine(@"Exemplo: Caminho\ate\o\executavel\do\navegador.exe");
+                System.Console.WriteLine("input não implementado");
+                Environment.Exit(0);
             }
-
-            options.BinaryLocation = location;
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
+            System.Console.WriteLine("Apenas o Chrome é suportado no linux.");
             string location = "/usr/bin/google-chrome-stable";
 
-            options.BinaryLocation = location;
+            chrome = new();
+
+            chrome.BinaryLocation = location;
+            chrome.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
+
+            chrome.SetLoggingPreference(LogType.Browser, LogLevel.Off);
+            chrome.SetLoggingPreference(LogType.Client, LogLevel.Off);
+            chrome.SetLoggingPreference(LogType.Driver, LogLevel.Off);
+            chrome.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
+            chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
+
         }
-
-        options.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
-
 
         try
         {
             // --------------------------------------------
 
-            var web = new HtmlWeb();
+            this.web = new HtmlWeb();
             var doc = await web.LoadFromWebAsync(url);
             var animename = doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/h2").InnerText;
             var episodes_length = int.Parse(doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/p[4]/span").InnerText);
@@ -78,10 +124,6 @@ class Program
             System.Console.WriteLine("Digite de qual episódio você quer começar baixar:");
             string startpoint = Console.ReadLine() ?? throw new Exception("Número de episódios não pode ficar vazio");
             int startindex = int.Parse(startpoint);
-
-            // DEBUG
-            // System.Console.WriteLine(startindex);
-            // DEBUG
 
             System.Console.WriteLine("Selecione a qualidade de vídeo preferida: 1.[SD] | 2.[HD] | 3.[FULL HD]\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.");
             string qualityinput = Console.ReadLine() ?? throw new Exception("Escolha entre 1, 2 ou 3.");
@@ -107,60 +149,82 @@ class Program
                     quality = "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
                 break;
             } 
-            // --------------------------------------------
 
-            var browser = new ChromeDriver(options);
+            // --------------------------------------------
 
             if (!Directory.Exists($"Animes/{animename}"))
                 Directory.CreateDirectory($"Animes/{animename}");
-
-            for (int i = startindex; i < episodes_length + 1 ; i++)
+            
+            IWebDriver browser;
+            if ( chrome != null )
             {
-                System.Console.WriteLine(GetEpisodeUrl(url, i));
-                var page = await web.LoadFromWebAsync(GetEpisodeUrl(url, i));
-                System.Console.WriteLine("Procurando link de download...");
-                var media = page.DocumentNode.SelectSingleNode(quality).GetAttributeValue("href", "");
-
-                browser.Navigate().GoToUrl(media);
-
-                // --------------------------------------------------
-
-                System.Console.WriteLine("Esperando carregar...");
-
-                IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
-
-                wait.Until(browser => ((IJavaScriptExecutor)browser).ExecuteScript("return document.readyState").Equals("complete"));
-                
-                // --------------------------------------------------
-
-                // //*[@id="page-content"]/div[2]/section/div[2]/div[1]/div/a[1]
-                browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
-                var animeurl = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
-
-                using (var http = new HttpClient())
-                {
-                    using (var response = await http.GetStreamAsync(animeurl))
-                    {
-                        using (var file = File.OpenWrite($"Animes/{animename}/{i}"))
-                        {
-                            System.Console.WriteLine($"Baixando episódio {i}...");
-                            await response.CopyToAsync(file);
-                        }
-                    }
-                }
+                browser = new ChromeDriver(chrome);
+                await Download(browser, animename, url, quality, startindex, episodes_length);
+            }
+            else if ( firefox != null )
+            {
+                browser = new FirefoxDriver(firefox);
+                await Download(browser, animename, url, quality, startindex, episodes_length);
             }
 
-            browser.Dispose();
-            
             System.Console.WriteLine("Downloads concluídos!");
-
-            // System.Console.WriteLine(media);
         }
         catch (System.Exception)
         {
             throw;
         }
+    }
 
-        // a7c12f5645a203e46018b6f2cab8c115
+    public static string GetEpisodeUrl(string url, int index)
+    {
+        if (index > 0 && index <= 9)
+        {
+            return url + "/episodio-0" + Convert.ToString(index) + "/download";
+        }
+        else
+        {
+            return url + "/episodio-" + Convert.ToString(index) + "/download";
+        }
+    }
+
+    public async Task Download(IWebDriver browser, string animename, string url, string quality, int startindex, int episodes_length)
+    {
+        for (int i = startindex; i < episodes_length + 1 ; i++)
+        {
+            System.Console.WriteLine(GetEpisodeUrl(url, i));
+            var page = await this.web.LoadFromWebAsync(GetEpisodeUrl(url, i));
+            System.Console.WriteLine("Procurando link de download...");
+            var media = page.DocumentNode.SelectSingleNode(quality).GetAttributeValue("href", "");
+
+            browser.Navigate().GoToUrl(media);
+
+            // --------------------------------------------------
+
+            System.Console.WriteLine("Esperando carregar...");
+
+            IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
+
+            wait.Until(browser => ((IJavaScriptExecutor)browser).ExecuteScript("return document.readyState").Equals("complete"));
+            
+            // --------------------------------------------------
+
+            // //*[@id="page-content"]/div[2]/section/div[2]/div[1]/div/a[1]
+            browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
+            var animeurl = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
+
+            using (var http = new HttpClient())
+            {
+                using (var response = await http.GetStreamAsync(animeurl))
+                {
+                    using (var file = File.OpenWrite($"Animes/{animename}/{i}"))
+                    {
+                        System.Console.WriteLine($"Baixando episódio {i}...");
+                        await response.CopyToAsync(file);
+                    }
+                }
+            }
+        }
+
+        browser.Dispose();
     }
 }
