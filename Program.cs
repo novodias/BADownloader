@@ -30,67 +30,78 @@ class Program
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             string location;
-            string[] chromeloc = 
+            string programfilesx86 = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
+            string programfiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+            string localappdata = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+            System.Console.WriteLine("Escolha o navegador: 1. [Chrome] | 2. [Firefox]");
+            string navegador = Console.ReadLine() ?? throw new Exception("Navegador não pode ser vazio.");
+
+            if (navegador == "1")
             {
-                @"%ProgramFiles%\Google\Chrome\Application\chrome.exe",
-                @"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe",
-                @"%LocalAppData%\Google\Chrome\Application\chrome.exe"
-            };
+                string[] chromeloc = 
+                {
+                    $@"{programfiles}\Google\Chrome\Application\chrome.exe",
+                    $@"{programfilesx86}\Google\Chrome\Application\chrome.exe",
+                    $@"{localappdata}\Google\Chrome\Application\chrome.exe"
+                };
+                if (File.Exists(chromeloc[0]) || File.Exists(chromeloc[1]) || File.Exists(chromeloc[2]))
+                {
+                    if (File.Exists(chromeloc[0]))
+                        location = chromeloc[0];
+                    else if (File.Exists(chromeloc[1]))
+                        location = chromeloc[1];
+                    else
+                        location = chromeloc[2];
+                    
+                    chrome = new ChromeOptions();
 
-            string[] firefoxloc = 
-            {
-                @"%LocalAppData%\Mozilla Firefox\firefox.exe",
-                @"%ProgramFiles%\Mozilla Firefox\firefox.exe",
-                @"%ProgramFiles(x86)%\Mozilla Firefox\firefox.exe"
-            };
+                    chrome.BinaryLocation = location;
+                    chrome.AddArguments("--headless", "--disable-gpu", "--log-level=3", "--incognito", "--no-sandbox");
 
-            if (File.Exists(chromeloc[0]) || File.Exists(chromeloc[1]) || File.Exists(chromeloc[2]))
-            {
-                if (File.Exists(chromeloc[0]))
-                    location = chromeloc[0];
-                else if (File.Exists(chromeloc[1]))
-                    location = chromeloc[1];
-                else
-                    location = chromeloc[2];
-                
-                chrome = new ChromeOptions();
-
-                chrome.BinaryLocation = location;
-                chrome.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
-
-                chrome.SetLoggingPreference(LogType.Browser, LogLevel.Off);
-                chrome.SetLoggingPreference(LogType.Client, LogLevel.Off);
-                chrome.SetLoggingPreference(LogType.Driver, LogLevel.Off);
-                chrome.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
-                chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
+                    chrome.SetLoggingPreference(LogType.Browser, LogLevel.Off);
+                    chrome.SetLoggingPreference(LogType.Client, LogLevel.Off);
+                    chrome.SetLoggingPreference(LogType.Driver, LogLevel.Off);
+                    chrome.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
+                    chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
+                }
             }
-            else if (File.Exists(firefoxloc[0]) || File.Exists(firefoxloc[1]) || File.Exists(firefoxloc[2]))
+            else if (navegador == "2")
             {
-                if (File.Exists(firefoxloc[0]))
-                    location = firefoxloc[0];
-                else if (File.Exists(firefoxloc[1]))
-                    location = firefoxloc[1];
-                else
-                    location = firefoxloc[2];
+                string[] firefoxloc = 
+                {
+                    $@"{localappdata}\Mozilla Firefox\firefox.exe",
+                    $@"{programfiles}\Mozilla Firefox\firefox.exe",
+                    $@"{programfilesx86}\Mozilla Firefox\firefox.exe"
+                };
 
-                firefox = new FirefoxOptions();
+                if (File.Exists(firefoxloc[0]) || File.Exists(firefoxloc[1]) || File.Exists(firefoxloc[2]))
+                {
+                    if (File.Exists(firefoxloc[0]))
+                        location = firefoxloc[0];
+                    else if (File.Exists(firefoxloc[1]))
+                        location = firefoxloc[1];
+                    else
+                        location = firefoxloc[2];
 
-                firefox.BrowserExecutableLocation = location;
-                firefox.AddArguments("--headless", "--disable-gpu", "--log-level=0", "--incognito");
+                    firefox = new FirefoxOptions();
 
-                firefox.SetLoggingPreference(LogType.Browser, LogLevel.Off);
-                firefox.SetLoggingPreference(LogType.Client, LogLevel.Off);
-                firefox.SetLoggingPreference(LogType.Driver, LogLevel.Off);
-                firefox.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
-                firefox.SetLoggingPreference(LogType.Server, LogLevel.Off);
+                    firefox.BrowserExecutableLocation = location;
+                    firefox.AddArguments("--headless", "--disable-gpu", "--log-level=3", "--incognito", "--no-sandbox");
+
+                    firefox.SetLoggingPreference(LogType.Browser, LogLevel.Off);
+                    firefox.SetLoggingPreference(LogType.Client, LogLevel.Off);
+                    firefox.SetLoggingPreference(LogType.Driver, LogLevel.Off);
+                    firefox.SetLoggingPreference(LogType.Profiler, LogLevel.Off);
+                    firefox.SetLoggingPreference(LogType.Server, LogLevel.Off);
+                }
             }
             else
             {
-                System.Console.WriteLine("Não foi encontrado o Chrome e nem o Opera, por favor insira o caminho do executável:");
-                System.Console.WriteLine(@"Exemplo: Caminho\ate\o\executavel\do\navegador.exe");
-                System.Console.WriteLine("input não implementado");
                 Environment.Exit(0);
             }
+
+
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
@@ -158,12 +169,16 @@ class Program
             IWebDriver browser;
             if ( chrome != null )
             {
-                browser = new ChromeDriver(chrome);
+                System.Console.WriteLine("Abrindo browser, isso pode demorar um pouco!");
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                browser = new ChromeDriver(@"drivers\", chrome, TimeSpan.FromSeconds(180));
                 await Download(browser, animename, url, quality, startindex, episodes_length);
             }
             else if ( firefox != null )
             {
-                browser = new FirefoxDriver(firefox);
+                System.Console.WriteLine("Abrindo browser, isso pode demorar um pouco!");
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                browser = new FirefoxDriver(@"drivers\", firefox, TimeSpan.FromSeconds(180));
                 await Download(browser, animename, url, quality, startindex, episodes_length);
             }
 
@@ -192,6 +207,7 @@ class Program
         for (int i = startindex; i < episodes_length + 1 ; i++)
         {
             System.Console.WriteLine(GetEpisodeUrl(url, i));
+            if ( this.web is null) throw new Exception("HtmlWeb web null!");
             var page = await this.web.LoadFromWebAsync(GetEpisodeUrl(url, i));
             System.Console.WriteLine("Procurando link de download...");
             var media = page.DocumentNode.SelectSingleNode(quality).GetAttributeValue("href", "");
