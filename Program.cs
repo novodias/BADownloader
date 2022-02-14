@@ -1,4 +1,6 @@
-﻿using OpenQA.Selenium;
+﻿using System.Text.RegularExpressions;
+using System.ComponentModel;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 
@@ -18,11 +20,12 @@ class Program
     HtmlWeb? web;
     ChromeOptions? chrome;
     FirefoxOptions? firefox;
+    IWebDriver? browser;
 
     public async Task MainAsync()
     {
         System.Console.Title = "Better Animes Downloader";
-        System.Console.WriteLine("Navegadores suportados: Chrome e Opera.");
+        System.Console.WriteLine("Navegadores suportados: Chrome e Firefox.");
         System.Console.WriteLine("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin");
         System.Console.WriteLine("Insira url do anime: ");
         string url = Console.ReadLine() ?? throw new Exception("Url não pode ficar vazio");
@@ -105,7 +108,7 @@ class Program
         }
         else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
         {
-            System.Console.WriteLine("Apenas o Chrome é suportado no linux.");
+            System.Console.WriteLine("Apenas o Chrome é suportado no Linux.");
             string location = "/usr/bin/google-chrome-stable";
 
             chrome = new();
@@ -162,30 +165,35 @@ class Program
             } 
 
             // --------------------------------------------
+            string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
+            string pattern = "[" + chars + "]";
+            animename = Regex.Replace(animename, pattern, "");
 
             if (!Directory.Exists($"Animes/{animename}"))
                 Directory.CreateDirectory($"Animes/{animename}");
             
-            IWebDriver browser;
+            System.Console.WriteLine("Abrindo browser, isso pode demorar um pouco!");
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            
             if ( chrome != null )
             {
-                System.Console.WriteLine("Abrindo browser, isso pode demorar um pouco!");
-                await Task.Delay(TimeSpan.FromSeconds(5));
-                browser = new ChromeDriver(@"drivers\", chrome, TimeSpan.FromSeconds(180));
-                await Download(browser, animename, url, quality, startindex, episodes_length);
+                this.browser = new ChromeDriver(@"drivers\", chrome, TimeSpan.FromSeconds(180));
             }
-            else if ( firefox != null )
+            else
             {
-                System.Console.WriteLine("Abrindo browser, isso pode demorar um pouco!");
-                await Task.Delay(TimeSpan.FromSeconds(5));
-                browser = new FirefoxDriver(@"drivers\", firefox, TimeSpan.FromSeconds(180));
-                await Download(browser, animename, url, quality, startindex, episodes_length);
+                this.browser = new FirefoxDriver(@"drivers\", firefox, TimeSpan.FromSeconds(180));
             }
+
+            await Download(browser, animename, url, quality, startindex, episodes_length);
+            
+            this.browser.Dispose();
 
             System.Console.WriteLine("Downloads concluídos!");
         }
         catch (System.Exception)
         {
+            if ( this.browser is not null )
+                this.browser.Dispose();
             throw;
         }
     }
@@ -220,19 +228,19 @@ class Program
 
             IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
 
-            wait.Until(browser => ((IJavaScriptExecutor)browser).ExecuteScript("return document.readyState").Equals("complete"));
+            // wait.Until(browser => ((IJavaScriptExecutor)browser).ExecuteScript("return document.readyState").Equals("complete"));
+            wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
+            browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
             
             // --------------------------------------------------
 
-            // //*[@id="page-content"]/div[2]/section/div[2]/div[1]/div/a[1]
-            browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
             var animeurl = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
 
             using (var http = new HttpClient())
             {
                 using (var response = await http.GetStreamAsync(animeurl))
                 {
-                    using (var file = File.OpenWrite($"Animes/{animename}/{i}"))
+                    using (var file = File.OpenWrite($"Animes/{animename}/{animename}-{i}"))
                     {
                         System.Console.WriteLine($"Baixando episódio {i}...");
                         await response.CopyToAsync(file);
