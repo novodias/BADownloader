@@ -4,6 +4,7 @@
 
 # **Packages usados:**
 `Selenium WebDriver`
+
 `Html Agility Pack`
 
 # Como funciona:
@@ -19,19 +20,24 @@ Para o programa funcionar, é necessário o `driver` do seu navegador:
 
 # FAQ:
 **O programa fecha sozinho ao abrir!**
+
 Você não instalou corretamente o driver.
 
 **O programa tava 'esperando carregar' e apareceu "Exception"**
+
 Inicie o programa novamente e coloque no episódio que estava baixando.
 
 **Tá demorando muito pra baixar!**
+
 Depois de baixar muitos episódios, verifique a sua velocidade de download ou talvez o site esteja limitando o upload.
 
 **Por que o programa usa o navegador???**
+
 Única maneira que EU achei para 'apertar' o botão "Gerar Link" no site foi essa, iniciar o navegador e ir até o site pegar o link de download.
 Caso você tenha suas dúvidas, verifique o código-fonte e compile no seu PC.
 
 **Vou pegar vírus usando esse programa?**
+
 Não. E NÃO baixe o programa por terceiros.
 
 **Apareceu um erro de DLL!**
