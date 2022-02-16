@@ -38,7 +38,7 @@ Caso você tenha suas dúvidas, verifique o código-fonte e compile no seu PC.
 
 **Vou pegar vírus usando esse programa?**
 
-Não. E NÃO baixe o programa por terceiros.
+Não.
 
 **Apareceu um erro de DLL!**
 Em caso de algum erro de dll, infelizmente a solução é compilar o projeto no seu PC e executar o .dll do projeto.
