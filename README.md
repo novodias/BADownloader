@@ -19,7 +19,7 @@ Para o programa funcionar, é necessário o `driver` do seu navegador:
 3.0 - Inicie o programa e insira a URL da página do anime.
 
 # FAQ:
-**O programa fecha sozinho ao abrir!**
+**O programa fecha sozinho ao abrir o browser!**
 
 Você não instalou corretamente o driver.
 
@@ -41,6 +41,7 @@ Caso você tenha suas dúvidas, verifique o código-fonte e compile no seu PC.
 Não.
 
 **Apareceu um erro de DLL!**
+
 Em caso de algum erro de dll, infelizmente a solução é compilar o projeto no seu PC e executar o .dll do projeto.
 Instale o SDK do NET Core 6.0.1 para compilar o projeto.
 
