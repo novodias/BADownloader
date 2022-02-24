@@ -10,13 +10,14 @@ namespace BADownloader
         private readonly int TaskDownload;
         private readonly List<string> URLsDownload;
         private readonly Anime Anime;
+        private List<string> URLsFailed;
         public DownloadManager(int amount, int anime_length, Anime anime)
         {
             this.TaskDownload = amount;
             this.URLsDownload = new(anime_length);
             this.Anime = anime;
+            this.URLsFailed = new();
         }
-
         private string GetEpisodeUrl(int index)
         {
             if (index > 0 && index <= 9)
@@ -29,16 +30,79 @@ namespace BADownloader
             }
         }
 
+        // public async Task GetOtherEpisodesAsync(IWebDriver browser, HtmlWeb web, int[] episodes)
+        // {
+        //     Console.WriteLine($"Anime: {this.Anime.Name}\n");
+
+        //     for (int i = 0; i < episodes.Length; i++)
+        //     {
+        //         Console.WriteLine($"Procurando link de download: [{episodes[i]}/{this.Anime.Episodes}]");
+                
+        //         if ( web is null ) throw new Exception("HtmlWeb web null!");
+
+        //         var page = await web.LoadFromWebAsync(GetEpisodeUrl(episodes[i]));
+
+        //         var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
+
+        //         browser.Navigate().GoToUrl(media);
+
+        //         // --------------------------------------------------
+
+        //         IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
+
+        //         wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
+
+        //         browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
+                
+        //         // --------------------------------------------------
+
+        //         var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
+
+        //         this.URLsDownload.Add(episodeURL);
+        //     }
+        // }
+
+        // Alterar para usar arrays ao invés de usar
+        // o index do for!!!
         public async Task GetLinkDownloadAsync(IWebDriver browser, HtmlWeb web)
         {
             Console.WriteLine($"Anime: {this.Anime.Name}\n");
-            for (int i = this.Anime.StartCount; i < this.Anime.Episodes + 1 ; i++)
+            
+            // for (int i = this.Anime.StartCount; i < this.Anime.Episodes.Length ; i++)
+            // {
+            //     Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.Episodes}]");
+                
+            //     if ( web is null ) throw new Exception("HtmlWeb web null!");
+
+            //     var page = await web.LoadFromWebAsync(GetEpisodeUrl(this.Anime.Episodes[i]));
+
+            //     var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
+
+            //     browser.Navigate().GoToUrl(media);
+
+            //     // --------------------------------------------------
+
+            //     IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
+
+            //     wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
+
+            //     browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
+                
+            //     // --------------------------------------------------
+
+            //     var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
+
+            //     this.URLsDownload.Add(episodeURL);
+            // }
+
+            foreach (var i in this.Anime.Episodes)
             {
-                Console.WriteLine($"Procurando link de download: [{i}/{this.Anime.Episodes}]");
+                Console.WriteLine($"Procurando link de download: [{i}/{this.Anime.Episodes_Length}]");
                 
                 if ( web is null ) throw new Exception("HtmlWeb web null!");
 
                 var page = await web.LoadFromWebAsync(GetEpisodeUrl(i));
+                System.Console.WriteLine(GetEpisodeUrl(i));
 
                 var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
 
@@ -62,9 +126,15 @@ namespace BADownloader
 
         private async Task DownloadAsync(int i)
         {
+            string downloadURL = this.URLsDownload.ElementAt(i);
+            int animeindex = this.Anime.Episodes[i];
 
-            var downloadURL = this.URLsDownload.ElementAt(i);
-            var animeindex = i + this.Anime.StartCount;
+            long mb = 1000 * 1000;
+
+            if (this.URLsFailed.Contains(downloadURL))
+            {
+                this.URLsFailed.Remove(downloadURL);
+            }
 
             try
             {
@@ -72,14 +142,13 @@ namespace BADownloader
                 
                 resp.EnsureSuccessStatusCode();
 
-                var mb = 1024L * 1024L;
-                var tamanho = resp.Content.Headers.ContentLength / mb;
+                long? tamanho = resp.Content.Headers.ContentLength / mb;
 
                 resp.Dispose();
 
                 var content = await Client.GetStreamAsync(downloadURL);
 
-                Console.WriteLine($"Baixando episódio: [{animeindex}/{this.Anime.Episodes}] [{tamanho} mb]");
+                Console.WriteLine($"Baixando episódio: [{animeindex}/{this.Anime.Episodes_Length}] [{tamanho} mb]");
 
                 var file = File.OpenWrite($"Animes/{this.Anime.Name}/{this.Anime.Name}-{animeindex}.mp4");
                 await content.CopyToAsync(file);
@@ -87,60 +156,62 @@ namespace BADownloader
                 await content.DisposeAsync();
                 await file.DisposeAsync();
 
-                Console.WriteLine($"Download do episódio [{animeindex}/{this.Anime.Episodes}] concluído.");
+                Console.WriteLine($"Download do episódio [{animeindex}/{this.Anime.Episodes_Length}] concluído.");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Download do episódio [{animeindex}] falhou! {ex.Message}");
+                this.URLsFailed.Add(downloadURL);
             }
         }
-
         public async Task StartDownloadAsync()
         {
             Console.WriteLine("\nComeçando download.");
 
-            int length = this.URLsDownload.Count;
-            
+            await this.ManageDownloader(this.URLsDownload);
+
+            if ( this.URLsFailed.Any() ) 
+                await this.RetryDownload();
+
+            Console.WriteLine("Downloads concluídos!");
+        }
+
+        private async Task RetryDownload()
+        {
+            Console.WriteLine(@"Baixando episódios que falharam...\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
+
+            await this.ManageDownloader(this.URLsFailed);
+        }
+
+        private async Task ManageDownloader(List<string> list)
+        {
+            int length = list.Count;
+            List<Task> tasks = new();
+
             for (int i = 0; i < length;)
             {
-                List<Task> tasks = new();
-
-                if ( this.URLsDownload.ElementAtOrDefault(i) is not null )
+                for (int j = 0; j < this.TaskDownload; j++)
                 {
-                    tasks.Add(DownloadAsync(i));
-                    i++;
-                }
-                if ( this.URLsDownload.ElementAtOrDefault(i) is not null && TaskDownload >= 2 )
-                {
-                    tasks.Add(DownloadAsync(i));
-                    i++;
-                }
-                if ( this.URLsDownload.ElementAtOrDefault(i) is not null && TaskDownload >= 3 )
-                {
-                    tasks.Add(DownloadAsync(i));
-                    i++;
-                }
-                if ( this.URLsDownload.ElementAtOrDefault(i) is not null && TaskDownload >= 4 )
-                {
-                    tasks.Add(DownloadAsync(i));
-                    i++;
-                }
-                if ( this.URLsDownload.ElementAtOrDefault(i) is not null && TaskDownload == 5 )
-                {
-                    tasks.Add(DownloadAsync(i));
-                    i++;
+                    if ( list.ElementAtOrDefault(i) is not null )
+                    {
+                        tasks.Add(DownloadAsync(i));
+                        i++;
+                    }
+                    else
+                    {
+                        continue;
+                    }
                 }
 
                 await Task.WhenAll(tasks);
                 tasks.Clear();
             }
-
-            Console.WriteLine("Downloads concluídos!\n");
         }
 
         public void Dispose()
         {
             this.URLsDownload.Clear();
+            this.URLsFailed.Clear();
             Client.Dispose();
         }
     }

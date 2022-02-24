@@ -4,6 +4,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Firefox;
 using HtmlAgilityPack;
+using Spectre.Console;
 
 namespace BADownloader
 {
@@ -24,12 +25,12 @@ namespace BADownloader
         {
             Console.Title = "BADownloader";
 
-            Console.WriteLine("Navegadores suportados: Chrome e Firefox.");
-            Console.WriteLine("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin");
-            Console.WriteLine("Insira url do anime: ");
-            string url = Console.ReadLine() ?? throw new Exception("URL não pode ficar vazio");
+            #region BROWSER
 
-            Console.WriteLine();
+            AnsiConsole.Write(new Markup("Navegadores suportados: [bold yellow]Chrome[/] e [bold red]Firefox[/]\n"));
+            AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
+            // Console.WriteLine("Insira url do anime: ");
+            string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
 
             if (!url.StartsWith("https://betteranime.net")) throw new Exception("URL inválida");
 
@@ -40,10 +41,18 @@ namespace BADownloader
                 string programfiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
                 string localappdata = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
-                Console.WriteLine("Escolha o navegador: 1. [Chrome] | 2. [Firefox]");
-                string navegador = Console.ReadLine() ?? throw new Exception("Navegador não pode ser vazio.");
+                // Console.WriteLine("Escolha o navegador: 1. [Chrome] | 2. [Firefox]");
+                // string navegador = Console.ReadLine() ?? throw new Exception("Navegador não pode ser vazio.");
 
-                if (navegador == "1")
+                var navegador = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("Selecione o seu navegador:")
+                    .PageSize(10)
+                    .AddChoices(new [] 
+                    {
+                        "Chrome", "Firefox"
+                    }));
+
+                if (navegador == "Chrome")
                 {
                     string[] chromeloc = 
                     {
@@ -74,7 +83,7 @@ namespace BADownloader
                         chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
                     }
                 }
-                else if (navegador == "2")
+                else if (navegador == "Firefox")
                 {
                     string[] firefoxloc = 
                     {
@@ -115,14 +124,22 @@ namespace BADownloader
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                Console.WriteLine("Escolha o navegador: 1. [Chrome] | 2. [Firefox]");
-                string navegador = Console.ReadLine() ?? throw new Exception("Navegador não pode ser vazio.");
+                // Console.WriteLine("Escolha o navegador: 1. [Chrome] | 2. [Firefox]");
+                // string navegador = Console.ReadLine() ?? throw new Exception("Navegador não pode ser vazio.");
+
+                var navegador = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("Selecione o seu navegador:")
+                    .PageSize(10)
+                    .AddChoices(new [] 
+                    {
+                        "Chrome", "Firefox"
+                    }));
 
                 Console.WriteLine("Insira o path do executável ");
                 Console.WriteLine("Não sabe onde fica? Abra o terminal e use o comando \"whereis\"");
                 Console.WriteLine("Deixe em branco caso tenha selecionado o Chrome:");
 
-                if (navegador == "1")
+                if (navegador == "Chrome")
                 {
                     string location = Console.ReadLine() ?? "/usr/bin/google-chrome-stable";
                     if (string.IsNullOrEmpty(location)) location = "/usr/bin/google-chrome-stable";
@@ -143,7 +160,7 @@ namespace BADownloader
                         chrome.SetLoggingPreference(LogType.Server, LogLevel.Off);
                     }
                 }
-                else if (navegador == "2")
+                else if (navegador == "Firefox")
                 {
                     string location = Console.ReadLine() ?? throw new Exception("Insira o path do Firefox!");
                     if (File.Exists(location))
@@ -168,82 +185,69 @@ namespace BADownloader
                 }
             }
 
+            #endregion 
+
             try
             {
-                // --------------------------------------------
+                HtmlWeb web = new();
+                string animename;
+                int episodes_length;
 
-                var web = new HtmlWeb();
-                var doc = await web.LoadFromWebAsync(url);
-                var animename = doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/h2").InnerText;
-                var episodes_length = int.Parse(doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/p[4]/span").InnerText);
-
-                Console.WriteLine("\nAnime: {0}\nNúmero de episódios: {1}", animename, episodes_length);
-
-                // --------------------------------------------
-
-                Console.WriteLine("Digite de qual episódio você quer começar baixar:");
-                string strstartpoint = Console.ReadLine() ?? throw new Exception("Número do episódio não pode ficar vazio");
-
-                int startpoint = int.Parse(strstartpoint);
-                if (startpoint < 1) startpoint = 1;
-                else if (startpoint > episodes_length) startpoint = episodes_length;
-
-                // --------------------------------------------
-
-                Console.WriteLine("\nQuantos downloads deseja ter? [1], [2], [3], [4] ou [5]\nRecomendado um PC bom suficiente para baixar 5/4/3/2 arquivos simultâneamente");
-                string strdownloadnum = Console.ReadLine() ?? "1";
-
-                int downloadnum = int.Parse(strdownloadnum);
-
-                if (downloadnum < 1) downloadnum = 1;
-                else if (downloadnum > 5) downloadnum = 5;
-
-                // --------------------------------------------
-
-                Console.WriteLine("\nSelecione a qualidade de vídeo preferida: 1.[SD] | 2.[HD] | 3.[FULL HD]\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.");
-                Console.WriteLine("Cada episódio pode variar de ~100mb à ~1gb dependendo da qualidade");
-                Console.WriteLine("Verifique se seu disco contém espaço suficiente!");
-                string qualityinput = Console.ReadLine() ?? "1";
-
-                string quality = string.Empty;
-
-                switch (qualityinput)
-                {
-                    case "1":
-                        quality = "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
-                    break;
-
-                    case "2":
-                        quality = "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[2]";
-                    break;
-
-                    case "3":
-                        quality = "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[3]";
-                    break;
-
-                    default:
-                        Console.WriteLine("??? selecionei o sd pra vc");
-                        quality = "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
-                    break;
-                } 
-
-                // --------------------------------------------
+                List<string> info = await AnimeInfo.GetAnimeInfo(url, web);
                 
+                animename = info.ElementAt(0);
+                episodes_length = int.Parse(info.ElementAt(1));
+                // string genres = info.ElementAt(2);
+
                 string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
                 string pattern = "[" + chars + "]";
                 animename = Regex.Replace(animename, pattern, "");
+
+                AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", animename, episodes_length)));
+                // AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
+                
+                int[] episodes = new int[episodes_length];
+
+                // --------------------------------------------
+
+                bool animeExist = AnimeInfo.CheckExistingFolder(animename);
+
+                if (animeExist)
+                {
+                    episodes = AnimeInfo.ExistingEpisodes(animename);
+
+                    episodes = AnimeInfo.OtherEpisodes(episodes, episodes_length);
+
+                    foreach (var i in episodes)
+                    {
+                        Console.WriteLine($"Episódio faltando: {i}");
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < episodes_length; i++)
+                    {
+                        episodes[i] = i + 1;
+                    }
+                }
+
+                // --------------------------------------------
+
+                // startpoint faz exatamente nada no momento.
+                int startpoint = AnimeInfo.EpisodeInput(episodes_length, episodes) - 1;
+                
+                int downloadnum = AnimeInfo.DownloadInput();
+                string quality = AnimeInfo.QualityInput();
 
                 // --------------------------------------------
 
                 if (!Directory.Exists($"Animes/{animename}"))
                     Directory.CreateDirectory($"Animes/{animename}");
+                
+                // --------------------------------------------
 
-                // --------------------------------------------
-                
-                Console.WriteLine("\nAbrindo browser, isso pode demorar um pouco!");
+                Console.WriteLine("\nAbrindo navegador, isso pode demorar um pouco!");
                 await Task.Delay(TimeSpan.FromSeconds(5));
-                
-                // --------------------------------------------
 
                 if ( chrome != null )
                 {
@@ -254,7 +258,7 @@ namespace BADownloader
                     this.browser = new FirefoxDriver(@"drivers", firefox, TimeSpan.FromSeconds(180));
                 }
 
-                Anime anime = new(animename, episodes_length, url, startpoint, quality);
+                Anime anime = new(animename, episodes, episodes_length, url, startpoint, quality);
 
                 DownloadManager Manage = new(downloadnum, episodes_length, anime);
 
