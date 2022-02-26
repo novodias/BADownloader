@@ -7,6 +7,8 @@
 
 `Html Agility Pack`
 
+`Spectre Console`
+
 # Como funciona:
 Para o programa funcionar, é necessário o `driver` do seu navegador:
 
