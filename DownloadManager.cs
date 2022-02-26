@@ -10,7 +10,7 @@ namespace BADownloader
         private readonly int TaskDownload;
         private readonly List<string> URLsDownload;
         private readonly Anime Anime;
-        private List<string> URLsFailed;
+        private readonly List<string> URLsFailed;
         public DownloadManager(int amount, int anime_length, Anime anime)
         {
             this.TaskDownload = amount;
@@ -30,79 +30,18 @@ namespace BADownloader
             }
         }
 
-        // public async Task GetOtherEpisodesAsync(IWebDriver browser, HtmlWeb web, int[] episodes)
-        // {
-        //     Console.WriteLine($"Anime: {this.Anime.Name}\n");
-
-        //     for (int i = 0; i < episodes.Length; i++)
-        //     {
-        //         Console.WriteLine($"Procurando link de download: [{episodes[i]}/{this.Anime.Episodes}]");
-                
-        //         if ( web is null ) throw new Exception("HtmlWeb web null!");
-
-        //         var page = await web.LoadFromWebAsync(GetEpisodeUrl(episodes[i]));
-
-        //         var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
-
-        //         browser.Navigate().GoToUrl(media);
-
-        //         // --------------------------------------------------
-
-        //         IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
-
-        //         wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
-
-        //         browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
-                
-        //         // --------------------------------------------------
-
-        //         var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
-
-        //         this.URLsDownload.Add(episodeURL);
-        //     }
-        // }
-
-        // Alterar para usar arrays ao invés de usar
-        // o index do for!!!
         public async Task GetLinkDownloadAsync(IWebDriver browser, HtmlWeb web)
         {
             Console.WriteLine($"Anime: {this.Anime.Name}\n");
-            
-            // for (int i = this.Anime.StartCount; i < this.Anime.Episodes.Length ; i++)
-            // {
-            //     Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.Episodes}]");
-                
-            //     if ( web is null ) throw new Exception("HtmlWeb web null!");
 
-            //     var page = await web.LoadFromWebAsync(GetEpisodeUrl(this.Anime.Episodes[i]));
-
-            //     var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
-
-            //     browser.Navigate().GoToUrl(media);
-
-            //     // --------------------------------------------------
-
-            //     IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
-
-            //     wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
-
-            //     browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
-                
-            //     // --------------------------------------------------
-
-            //     var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
-
-            //     this.URLsDownload.Add(episodeURL);
-            // }
-
-            foreach (var i in this.Anime.Episodes)
+            for (int i = this.Anime.Index; i < this.Anime.Episodes.Length; i++)
             {
-                Console.WriteLine($"Procurando link de download: [{i}/{this.Anime.Episodes_Length}]");
+                Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.Episodes_Length}]");
                 
                 if ( web is null ) throw new Exception("HtmlWeb web null!");
 
-                var page = await web.LoadFromWebAsync(GetEpisodeUrl(i));
-                System.Console.WriteLine(GetEpisodeUrl(i));
+                var page = await web.LoadFromWebAsync(GetEpisodeUrl(this.Anime.Episodes[i]));
+                System.Console.WriteLine(GetEpisodeUrl(this.Anime.Episodes[i]));
 
                 var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
 
@@ -127,7 +66,7 @@ namespace BADownloader
         private async Task DownloadAsync(int i)
         {
             string downloadURL = this.URLsDownload.ElementAt(i);
-            int animeindex = this.Anime.Episodes[i];
+            int animeindex = this.Anime.Episodes[this.Anime.Index + i];
 
             long mb = 1000 * 1000;
 

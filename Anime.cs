@@ -17,7 +17,7 @@ namespace BADownloader
             this.Episodes_Length = episodes_length;
             this.URL = url;
             this.StartCount = startcount;
-            this.Index = this.StartCount - 1;
+            this.Index = Array.FindIndex(this.Episodes, x => x == startcount);
             this.Quality = quality;
         }
     }

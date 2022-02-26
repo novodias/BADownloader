@@ -56,7 +56,6 @@ namespace BADownloader
                 {
                     if (input < 1) input = 1;
                     else if (input > episodes_length) input = episodes_length;
-                    else input = episodes[0];
                 }
                 return input;
             }
@@ -125,17 +124,29 @@ namespace BADownloader
             return false;
         }
 
-        // Não funciona com animes com mais de
-        // 99 episódios!!!
         private static int GetEpisodeParsed(string filename)
         {
             int frnumber = filename.LastIndexOf('-') + 1;
             int scnumber = frnumber + 1;
-            
+            int thnumber = scnumber + 1;
+            string number;
+
             int one = int.Parse(filename.Substring(frnumber, 1));
+            
+            // Refazer de uma maneira que não use nested if's,
+            // Pois fica confuso pra caramba desse jeito.
             if ( int.TryParse(filename.AsSpan(scnumber, 1), out int two ))
             {
-                string number = string.Concat(one, two);
+
+                if ( int.TryParse(filename.AsSpan(thnumber, 1), out int thr ))
+                {
+                    number = string.Concat(one, two, thr);
+                }
+                else
+                {
+                    number = string.Concat(one, two);
+                }
+
                 return int.Parse(number);
             }
             else
