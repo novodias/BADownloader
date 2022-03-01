@@ -18,30 +18,18 @@ namespace BADownloader
             this.Anime = anime;
             this.URLsFailed = new();
         }
-        private string GetEpisodeUrl(int index)
-        {
-            if (index > 0 && index <= 9)
-            {
-                return this.Anime.URL + "/episodio-0" + Convert.ToString(index) + "/download";
-            }
-            else
-            {
-                return this.Anime.URL + "/episodio-" + Convert.ToString(index) + "/download";
-            }
-        }
 
         public async Task GetLinkDownloadAsync(IWebDriver browser, HtmlWeb web)
         {
-            Console.WriteLine($"Anime: {this.Anime.Name}\n");
-
             for (int i = this.Anime.Index; i < this.Anime.Episodes.Length; i++)
             {
                 Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.Episodes_Length}]");
                 
                 if ( web is null ) throw new Exception("HtmlWeb web null!");
 
-                var page = await web.LoadFromWebAsync(GetEpisodeUrl(this.Anime.Episodes[i]));
-                System.Console.WriteLine(GetEpisodeUrl(this.Anime.Episodes[i]));
+                var page = await web.LoadFromWebAsync(this.Anime.LinkDownloads.ElementAt(i).Value);
+                if (page is null) { continue; }
+                Console.WriteLine(this.Anime.LinkDownloads.ElementAt(i).Value);
 
                 var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
 
@@ -90,6 +78,7 @@ namespace BADownloader
                 Console.WriteLine($"Baixando episódio: [{animeindex}/{this.Anime.Episodes_Length}] [{tamanho} mb]");
 
                 var file = File.OpenWrite($"Animes/{this.Anime.Name}/{this.Anime.Name}-{animeindex}.mp4");
+
                 await content.CopyToAsync(file);
 
                 await content.DisposeAsync();
@@ -114,14 +103,12 @@ namespace BADownloader
 
             Console.WriteLine("Downloads concluídos!");
         }
-
         private async Task RetryDownload()
         {
             Console.WriteLine(@"Baixando episódios que falharam...\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
 
             await this.ManageDownloader(this.URLsFailed);
         }
-
         private async Task ManageDownloader(List<string> list)
         {
             int length = list.Count;

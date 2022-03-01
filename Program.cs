@@ -31,20 +31,21 @@ namespace BADownloader
                 string animename;
                 int episodes_length;
 
-                List<string> info = await AnimeInfo.GetAnimeInfo(url, web);
+                List<object> info = await AnimeInfo.GetAnimeInfo(url, web);
                 
-                animename = info.ElementAt(0);
-                episodes_length = int.Parse(info.ElementAt(1));
-                // string genres = info.ElementAt(2);
+                animename = (string)info.ElementAt(0);
+                episodes_length = (int)info.ElementAt(1);
+                string genres = (string)info.ElementAt(4);
 
                 string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
                 string pattern = "[" + chars + "]";
                 animename = Regex.Replace(animename, pattern, "");
 
                 AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", animename, episodes_length)));
-                // AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
+                AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
                 
-                int[] episodes = new int[episodes_length];
+                Dictionary<int, string> episodesdic = (Dictionary<int, string>)info.ElementAt(2);
+                int[] episodes = (int[])info.ElementAt(3);
 
                 // --------------------------------------------
 
@@ -65,6 +66,14 @@ namespace BADownloader
                             strepisodes += $", {i}";
                     }
                     Console.WriteLine(strepisodes);
+
+                    foreach (var ep in episodes)
+                    {
+                        if (!episodesdic.ContainsKey(ep))
+                        {
+                            episodesdic.Remove(ep);
+                        }
+                    }
                 }
                 else
                 {
@@ -75,7 +84,7 @@ namespace BADownloader
                 }
 
                 // --------------------------------------------
-
+                
                 int startpoint = AnimeInfo.EpisodeInput(episodes_length, episodes);
                 int downloadnum = AnimeInfo.DownloadInput();
                 string quality = AnimeInfo.QualityInput();
@@ -89,7 +98,7 @@ namespace BADownloader
 
                 this.browser = Browser.Setup();
 
-                Anime anime = new(animename, episodes, episodes_length, url, startpoint, quality);
+                Anime anime = new(animename, episodesdic, episodes, episodes_length, url, startpoint, quality);
 
                 DownloadManager Manage = new(downloadnum, episodes_length, anime);
 
