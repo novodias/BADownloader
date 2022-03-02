@@ -54,7 +54,6 @@ namespace BADownloader
                 if (animeExist)
                 {
                     episodes = AnimeInfo.ExistingEpisodes(animename);
-
                     episodes = AnimeInfo.OtherEpisodes(episodes, episodes_length);
 
                     string strepisodes = string.Empty;
@@ -67,13 +66,12 @@ namespace BADownloader
                     }
                     Console.WriteLine(strepisodes);
 
-                    foreach (var ep in episodes)
+                    Dictionary<int, string> temporary = new();
+                    for (int i = 0; i < episodes.Length; i++)
                     {
-                        if (!episodesdic.ContainsKey(ep))
-                        {
-                            episodesdic.Remove(ep);
-                        }
+                        temporary.Add(episodes[i], episodesdic.Single(ctx => ctx.Key == episodes[i]).Value);
                     }
+                    episodesdic = temporary;
                 }
                 else
                 {

@@ -22,5 +22,23 @@ namespace BADownloader
             this.Index = Array.FindIndex(this.Episodes, x => x == startcount);
             this.Quality = quality;
         }
+
+        public void WriteInfo()
+        {
+            Console.WriteLine($"Anime:{this.Name}");
+            Console.Write($"Episodes: ");
+            foreach (var num in this.Episodes)
+            {
+                if ( num == this.Episodes[0] )
+                    Console.Write(num);
+                else
+                    Console.Write(", " + num);
+            }
+            Console.WriteLine("Episodes Length: " + this.Episodes_Length);
+            Console.WriteLine("URL:" + this.URL);
+            Console.WriteLine("Startcount: " + this.StartCount );
+            Console.WriteLine("Index: " + this.Index);
+            Console.WriteLine("Quality: " + this.Quality);
+        }
     }
 }

@@ -28,24 +28,23 @@ namespace BADownloader
                 if ( web is null ) throw new Exception("HtmlWeb web null!");
 
                 var page = await web.LoadFromWebAsync(this.Anime.LinkDownloads.ElementAt(i).Value);
-                if (page is null) { continue; }
                 Console.WriteLine(this.Anime.LinkDownloads.ElementAt(i).Value);
 
                 var media = page.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
 
-                browser.Navigate().GoToUrl(media);
 
                 // --------------------------------------------------
 
-                IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
+                browser.Navigate().GoToUrl(media);
 
+                IWait<IWebDriver> wait = new WebDriverWait(browser, TimeSpan.FromSeconds(30.00));
                 wait.Until(x => x.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")));
 
                 browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/button")).Click();
+                var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
                 
                 // --------------------------------------------------
 
-                var episodeURL = browser.FindElement(By.XPath("//*[@id='__next']/header/div/div/a")).GetAttribute("href");
 
                 this.URLsDownload.Add(episodeURL);
             }
@@ -54,7 +53,7 @@ namespace BADownloader
         private async Task DownloadAsync(int i)
         {
             string downloadURL = this.URLsDownload.ElementAt(i);
-            int animeindex = this.Anime.Episodes[this.Anime.Index + i];
+            int animeindex = this.Anime.LinkDownloads.ElementAt(this.Anime.Index + i).Key;
 
             long mb = 1000 * 1000;
 
