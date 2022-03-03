@@ -71,7 +71,7 @@ namespace BADownloader
                 {
                     string gen = Regex.Replace(node.InnerText, @"[^0-9a-zA-Z\p{L}]+", "");
                     if (string.IsNullOrEmpty(gen)) continue;
-                    genres.Add(gen);
+                    if (!genres.Contains(gen)) genres.Add(gen);
                 }
                 i++;
             }
@@ -107,7 +107,7 @@ namespace BADownloader
             foreach (var url in urls)
             {
                 int num = GetEpisodeParsed(url);
-                
+
                 eps.Add(num, url);
             }
 
@@ -216,14 +216,14 @@ namespace BADownloader
                 return int.Parse(number);
             }
 
-            number = string.Concat(thr);
+            number = string.Concat(one, two, thr);
 
             if (!int.TryParse(filename.AsSpan(qtnumber, 1), out int qtr))
             {
                 return int.Parse(number);
             }
 
-            number = string.Concat(qtr);
+            number = string.Concat(one, two, thr, qtr);
 
             return int.Parse(number);
         }
