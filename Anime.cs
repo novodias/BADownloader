@@ -5,18 +5,18 @@ namespace BADownloader
         public string Name { get; }
         public Dictionary<int, string> LinkDownloads { get; }
         public int[] Episodes { get; }
-        public int Episodes_Length { get; }
+        public int LastEpisode { get; }
         public string URL { get; }
         public int StartCount { get; }
         public int Index { get; }
         public string Quality { get; }
 
-        public Anime(string name, Dictionary<int, string> links, int[] episodes, int episodes_length, string url, int startcount, string quality)
+        public Anime(string name, Dictionary<int, string> links, int[] episodes, string url, int startcount, string quality)
         {
             this.Name = name;
             this.LinkDownloads = links;
             this.Episodes = episodes;
-            this.Episodes_Length = episodes_length;
+            this.LastEpisode = this.LinkDownloads.Last().Key;
             this.URL = url;
             this.StartCount = startcount;
             this.Index = Array.FindIndex(this.Episodes, x => x == startcount);
@@ -34,7 +34,7 @@ namespace BADownloader
                 else
                     Console.Write(", " + num);
             }
-            Console.WriteLine("Episodes Length: " + this.Episodes_Length);
+            Console.WriteLine("Last Episode: " + this.LastEpisode);
             Console.WriteLine("URL:" + this.URL);
             Console.WriteLine("Startcount: " + this.StartCount );
             Console.WriteLine("Index: " + this.Index);

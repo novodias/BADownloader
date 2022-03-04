@@ -23,7 +23,7 @@ namespace BADownloader
         {
             for (int i = this.Anime.Index; i < this.Anime.Episodes.Length; i++)
             {
-                Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.Episodes_Length}]");
+                Console.WriteLine($"Procurando link de download: [{this.Anime.Episodes[i]}/{this.Anime.LastEpisode}]");
                 
                 if ( web is null ) throw new Exception("HtmlWeb web null!");
 
@@ -74,7 +74,7 @@ namespace BADownloader
 
                 var content = await Client.GetStreamAsync(downloadURL);
 
-                Console.WriteLine($"Baixando episódio: [{animeindex}/{this.Anime.Episodes_Length}] [{tamanho} mb]");
+                Console.WriteLine($"Baixando episódio: [{animeindex}/{this.Anime.LastEpisode}] [{tamanho} mb]");
 
                 var file = File.OpenWrite($"Animes/{this.Anime.Name}/{this.Anime.Name}-{animeindex}.mp4");
 
@@ -83,7 +83,7 @@ namespace BADownloader
                 await content.DisposeAsync();
                 await file.DisposeAsync();
 
-                Console.WriteLine($"Download do episódio [{animeindex}/{this.Anime.Episodes_Length}] concluído.");
+                Console.WriteLine($"Download do episódio [{animeindex}/{this.Anime.LastEpisode}] concluído.");
             }
             catch (Exception ex)
             {

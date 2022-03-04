@@ -83,6 +83,7 @@ namespace BADownloader
 
                 // --------------------------------------------
                 
+                // Substituir episodes_length
                 int startpoint = AnimeInfo.EpisodeInput(episodes_length, episodes);
                 int downloadnum = AnimeInfo.DownloadInput();
                 string quality = AnimeInfo.QualityInput();
@@ -96,7 +97,7 @@ namespace BADownloader
 
                 this.browser = Browser.Setup();
 
-                Anime anime = new(animename, episodesdic, episodes, episodes_length, url, startpoint, quality);
+                Anime anime = new(animename, episodesdic, episodes, url, startpoint, quality);
 
                 DownloadManager Manage = new(downloadnum, episodes_length, anime);
 
