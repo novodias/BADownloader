@@ -197,37 +197,26 @@ namespace BADownloader
 
         private static int GetEpisodeParsed(string filename)
         {
-            // Refactorar para usar arrays e for.
-            int frnumber = filename.LastIndexOf('-') + 1;
-            int scnumber = frnumber + 1;
-            int thnumber = scnumber + 1;
-            int qtnumber = thnumber + 1;
-            string number;
+            int one = filename.LastIndexOf('-') + 1;
 
-            int one = int.Parse(filename.Substring(frnumber, 1));
-
-            if (!int.TryParse(filename.AsSpan(scnumber, 1), out int two))
+            int[] numbers = new int[4] 
             {
-                return one;
+                one, one + 1, one + 2, one + 3
+            };
+
+            string numberconcat = string.Empty;
+
+            for (int i = 0; i < 4; i++)
+            {
+                if (!int.TryParse(filename.AsSpan(numbers[i], 1), out int num))
+                {
+                    break;
+                }
+                
+                numberconcat += num.ToString();
             }
 
-            number = string.Concat(one, two);
-
-            if (!int.TryParse(filename.AsSpan(thnumber, 1), out int thr))
-            {
-                return int.Parse(number);
-            }
-
-            number = string.Concat(one, two, thr);
-
-            if (!int.TryParse(filename.AsSpan(qtnumber, 1), out int qtr))
-            {
-                return int.Parse(number);
-            }
-
-            number = string.Concat(one, two, thr, qtr);
-
-            return int.Parse(number);
+            return int.Parse(numberconcat);
         }
 
         public static int[] ExistingEpisodes(string animename)
