@@ -187,7 +187,8 @@ namespace BADownloader
             {
                 if ( item.Name == animename )
                 {
-                    return true;
+                    var files = item.GetFiles();
+                    if (files is not null) return true;
                 }
             }
 
@@ -196,6 +197,7 @@ namespace BADownloader
 
         private static int GetEpisodeParsed(string filename)
         {
+            // Refactorar para usar arrays e for.
             int frnumber = filename.LastIndexOf('-') + 1;
             int scnumber = frnumber + 1;
             int thnumber = scnumber + 1;
@@ -245,14 +247,14 @@ namespace BADownloader
             return epi;
         }
 
-        public static int[] OtherEpisodes(int[] episodes, int animelength)
+        public static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
         {
             int[] episodes_all = new int[animelength];
-            int x = 0;
+            int x = startepisode;
 
             for (int i = 0; i < animelength; i++)
             {
-                episodes_all[i] = x + 1;
+                episodes_all[i] = x;
                 x++;
             }
 

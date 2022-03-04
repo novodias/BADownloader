@@ -169,6 +169,7 @@ namespace BADownloader
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
+                System.Console.WriteLine("Insira o path do Firefox!");
                 string location = Console.ReadLine() ?? throw new Exception("Insira o path do Firefox!");
 
                 if (File.Exists(location))
