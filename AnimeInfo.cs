@@ -6,55 +6,72 @@ namespace BADownloader
 {
     public class AnimeInfo
     {
-        public async static Task<List<object>> GetAnimeInfo(string url, HtmlWeb web)
+        public async static Task<Anime> GetAnimeInfo(string url, HtmlWeb web)
         {
             var doc = await web.LoadFromWebAsync(url);
-            List<object> info = new();
             
             string animename = doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/h2").InnerText ?? 
                 throw new Exception("Não foi encontrado o nome do anime, página não carregou ou o site caiu!");
-            info.Add(animename); 
 
             var episodesdictionary = GetEpisodesURL(doc);
 
-            var episodes_length = episodesdictionary.Count;
-            info.Add(episodes_length);
+            var animelength = episodesdictionary.Count;
 
-            info.Add(episodesdictionary);
-
-            int[] episodes = new int[episodes_length];
-            for (int i = 0; i < episodes_length; i++)
+            int[] episodes = new int[animelength];
+            for (int i = 0; i < animelength; i++)
             {
                 episodes[i] = episodesdictionary.ElementAt(i).Key;
             }
-            info.Add(episodes);
-
-            // string episodes_length = doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/p[4]/span").InnerText ??
-            //     throw new Exception("Não foi encontrado o total de episódios, a página não carregou ou o site caiu!");
-
-            // var genresnodes = doc.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/div[@class='anime-genres']").Descendants();
-            // string genres = string.Empty;
-
-            // foreach (var item in genresnodes)
-            // {
-            //     if ( string.IsNullOrEmpty(genres) )
-            //     {
-            //         genres = $"[green bold]{item.InnerText.Replace(" ", "").Replace("\n", "")}[/]";
-            //     }
-            //     else
-            //     {
-            //         genres += $", [green bold]{item.InnerText.Replace(" ", "").Replace("\n", "")}[/]";
-            //     }
-            // }
 
             string genres = GetGenres(doc);
-            info.Add(genres);
+
+            string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
+            string pattern = "[" + chars + "]";
+            animename = Regex.Replace(animename, pattern, "");
+
+            AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", animename, episodesdictionary.Last().Key)));
+            AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
+
+            if (CheckExistingFolder(animename))
+            {
+                episodes = ExistingEpisodes(animename);
+                episodes = OtherEpisodes(episodes, episodesdictionary.ElementAt(0).Key, animelength);
+
+                string strepisodes = string.Empty;
+                foreach (var i in episodes)
+                {
+                    if (strepisodes == string.Empty)
+                        strepisodes = $"Episódio(s) faltando: {i}";
+                    else
+                        strepisodes += $", {i}";
+                }
+                Console.WriteLine(strepisodes);
+
+                Dictionary<int, string> temporary = new();
+                for (int i = 0; i < episodes.Length; i++)
+                {
+                    temporary.Add(episodes[i], episodesdictionary.Single(ctx => ctx.Key == episodes[i]).Value);
+                }
+                episodesdictionary = temporary;
+            }
+            else
+            {
+                for (int i = 0; i < animelength; i++)
+                {
+                    episodes[i] = i + 1;
+                }
+            }
+
+            int startpoint = EpisodeInput(animelength, episodes);
+            string quality = QualityInput();
+
+            Anime animeinfo = new(animename, episodesdictionary, episodes, url, startpoint, quality, genres, animelength);
 
             if ( doc == null || string.IsNullOrEmpty(animename) )
                 throw new Exception("Não foi encontrado a página ou não tem informações suficientes disponíveis");
             else
             {
-                return info;
+                return animeinfo;
             }
         }
 
@@ -114,7 +131,7 @@ namespace BADownloader
             return eps;
         }
 
-        public static int EpisodeInput(int episodes_length, int[] episodes)
+        private static int EpisodeInput(int episodes_length, int[] episodes)
         {
             var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
 
@@ -151,7 +168,7 @@ namespace BADownloader
             }
         }
 
-        public static string QualityInput()
+        private static string QualityInput()
         {
             var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
                 .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
@@ -179,7 +196,7 @@ namespace BADownloader
 
         }
 
-        public static bool CheckExistingFolder(string animename)
+        private static bool CheckExistingFolder(string animename)
         {
             DirectoryInfo dir = new("Animes/");
 
@@ -219,7 +236,7 @@ namespace BADownloader
             return int.Parse(numberconcat);
         }
 
-        public static int[] ExistingEpisodes(string animename)
+        private static int[] ExistingEpisodes(string animename)
         {
             DirectoryInfo dir = new($"Animes/{animename}");
             int length = dir.GetFiles().Length;
@@ -236,7 +253,7 @@ namespace BADownloader
             return epi;
         }
 
-        public static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
+        private static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
         {
             int[] episodes_all = new int[animelength];
             int x = startepisode;
