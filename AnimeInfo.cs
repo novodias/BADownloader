@@ -54,6 +54,10 @@ namespace BADownloader
                 }
                 episodesdictionary = temporary;
             }
+
+            // TODO: 
+            // Isso não faz sentido, usar o episodesdictionary 
+            // ao invés de criar episódios do nada
             else
             {
                 for (int i = 0; i < animelength; i++)

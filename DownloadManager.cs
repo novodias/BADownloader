@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
-using HtmlAgilityPack;
 using Newtonsoft.Json;
+using HtmlAgilityPack;
 
 namespace BADownloader
 {
@@ -20,9 +20,8 @@ namespace BADownloader
             this.URLsFailed = new();
         }
 
-        private async Task<string> GetResponseURL(int index)
+        private async Task<string> GetResponseURL(string downloadlink)
         {
-            var downloadlink = this.Anime.LinkDownloads.ElementAt(index).Value;
             var doc = await this.Web.LoadFromWebAsync(downloadlink);
 
             downloadlink = doc.DocumentNode.SelectSingleNode(this.Anime.Quality).GetAttributeValue("href", "");
@@ -107,15 +106,26 @@ namespace BADownloader
 
             await this.ManageDownloader();
 
-            Console.WriteLine($"Downloads concluídos! \n{this.URLsFailed.Count} downloads falharam.");
+            Console.WriteLine($"Downloads concluídos!");
+
+            await this.RetryDownload();
         }
 
-        // private async Task RetryDownload()
-        // {
-        //     Console.WriteLine("Baixando episódios que falharam..." + "\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
+        private async Task RetryDownload()
+        {
+            if ( !(this.URLsFailed.Count > 0) )
+                return;
 
-        //     await this.ManageDownloader(this.URLsFailed);
-        // }
+            Console.Write("Deseja baixar os episódios que falharam? [Y/n]: ");
+            char key = Console.ReadKey().KeyChar;
+            bool bkey = key == 'Y' | key == 'y' | key == '\0';
+
+            if ( bkey )
+            {
+                Console.WriteLine("Baixando episódios que falharam..." + "\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
+                await this.RetryManageDownloader(this.URLsFailed);
+            }
+        }
 
         private async Task ManageDownloader()
         {
@@ -127,8 +137,9 @@ namespace BADownloader
                 {
                     if ( i > this.Anime.LinkDownloads.Count )
                         break;
-                    
-                    tasks.Add(DownloadAsync(await this.GetResponseURL(i), i));
+
+                    var downloadlink = this.Anime.LinkDownloads.ElementAt(i).Value;
+                    tasks.Add(DownloadAsync(await this.GetResponseURL(downloadlink), i));
                     i++;
                 }
 
@@ -137,24 +148,24 @@ namespace BADownloader
             }
         }
 
-        // private async Task ManageDownloader(List<string> list)
-        // {
-        //     List<Task> tasks = new();
+        private async Task RetryManageDownloader(List<string> list)
+        {
+            List<Task> tasks = new();
 
-        //     for (int i = 0; i < list.Count;)
-        //     {
-        //         for (int j = 0; j < this.TaskDownload; j++)
-        //         {
-        //             if ( i > this.Anime.LinkDownloads.Count )
-        //                 break;
+            for (int i = 0; i < list.Count;)
+            {
+                for (int j = 0; j < this.TaskDownload; j++)
+                {
+                    if ( i > this.Anime.LinkDownloads.Count )
+                        break;
                     
-        //             tasks.Add(DownloadAsync(list.ElementAt(i), i));
-        //         }
+                    tasks.Add(DownloadAsync(await this.GetResponseURL(list.ElementAt(i)), i));
+                }
 
-        //         await Task.WhenAll(tasks);
-        //         tasks.Clear();
-        //     }
-        // }
+                await Task.WhenAll(tasks);
+                tasks.Clear();
+            }
+        }
 
         public void Dispose()
         {

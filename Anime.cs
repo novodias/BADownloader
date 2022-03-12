@@ -2,7 +2,7 @@ namespace BADownloader
 {
     public class Anime
     {
-        public string Name { get; set; }
+        public string Name { get; }
         public Dictionary<int, string> LinkDownloads { get; }
         public int[] Episodes { get; }
         public int AnimeLength { get; }

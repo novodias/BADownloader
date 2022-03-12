@@ -1,5 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using HtmlAgilityPack;
+﻿using HtmlAgilityPack;
 using Spectre.Console;
 
 namespace BADownloader
