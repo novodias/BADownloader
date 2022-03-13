@@ -47,22 +47,22 @@ namespace BADownloader
             AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
             string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
 
-            HtmlWeb web = new();
+            IAnimeInfo info;
 
             if (url.StartsWith("https://betteranime.net"))
             {
-                BetterAnime info = new();
-                return await GetAnimeInfoAsync(info, url, web);
+                info = new BetterAnime();
             }
             else if (url.StartsWith("https://animeyabu.com"))
             {
-                AnimeYabu info = new();
-                return await GetAnimeInfoAsync(info, url, web);
+                info = new AnimeYabu();
             }
             else
             {
                 throw new Exception("O site que você colocou não é suportado");
             }
+            
+            return await GetAnimeInfoAsync( info, url, new HtmlWeb() );
         }
 
         static Task<Anime> GetAnimeInfoAsync(IAnimeInfo info, string url, HtmlWeb web)
