@@ -6,6 +6,8 @@ namespace BADownloader.Sites
 {
     public class AnimeInfo
     {
+        private static DirectoryInfo UserDir = new("Animes/");
+
         protected static int EpisodeInput(int episodes_length, int[] episodes)
         {
             var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
@@ -23,19 +25,26 @@ namespace BADownloader.Sites
             }
         }
 
-        protected static bool CheckExistingFolder(string animename)
+        protected static bool CheckUserFolder(string animename)
         {
-            DirectoryInfo dir = new("Animes/");
+            if ( !UserDir.Exists ) 
+            {
+                UserDir.Create();
+                UserDir.CreateSubdirectory(animename);
+                return false;
+            }
 
-            foreach (var item in dir.GetDirectories())
+            foreach ( var item in UserDir.GetDirectories() )
             {
                 if ( item.Name == animename )
                 {
                     var files = item.GetFiles();
-                    if (files is not null) return true;
+                    if ( files is not null ) 
+                        return true;
                 }
             }
 
+            UserDir.CreateSubdirectory(animename);
             return false;
         }
 

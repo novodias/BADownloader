@@ -33,10 +33,10 @@ namespace BADownloader.Sites
             AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
 
             // Transformar isso em um método no AnimeInfo.
-            if (AnimeInfo.CheckExistingFolder(animename))
+            if (CheckUserFolder(animename))
             {
-                episodes = AnimeInfo.ExistingEpisodes(animename);
-                episodes = AnimeInfo.OtherEpisodes(episodes, episodesdictionary.ElementAt(0).Key, animelength);
+                episodes = ExistingEpisodes(animename);
+                episodes = OtherEpisodes(episodes, episodesdictionary.ElementAt(0).Key, animelength);
 
                 string strepisodes = string.Empty;
                 foreach (var i in episodes)

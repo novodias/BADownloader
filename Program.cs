@@ -16,19 +16,9 @@ namespace BADownloader
         {
             Console.Title = "BADownloader";
 
-            AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
-            string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
-
-            if (!url.StartsWith("https://betteranime.net")) throw new Exception("URL inválida");
-
             try
             {
                 Anime anime = await GetAnimeTypeAsync();
-
-                // --------------------------------------------
-
-                if (!Directory.Exists($"Animes/{anime.Name}"))
-                    Directory.CreateDirectory($"Animes/{anime.Name}");
                 
                 // --------------------------------------------
 
