@@ -2,11 +2,11 @@ using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Spectre.Console;
 
-namespace BADownloader
+namespace BADownloader.Sites
 {
-    public class AnimeInfo
+    public class BetterAnime : AnimeInfo, IAnimeInfo
     {
-        public async static Task<Anime> GetAnimeInfo(string url, HtmlWeb web)
+        public async Task<Anime> GetAnimeAsync(string url, HtmlWeb web)
         {
             var doc = await web.LoadFromWebAsync(url);
             
@@ -32,10 +32,11 @@ namespace BADownloader
             AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", animename, episodesdictionary.Last().Key)));
             AnsiConsole.Write(new Markup(string.Format($"Gêneros: {genres}\n")));
 
-            if (CheckExistingFolder(animename))
+            // Transformar isso em um método no AnimeInfo.
+            if (AnimeInfo.CheckExistingFolder(animename))
             {
-                episodes = ExistingEpisodes(animename);
-                episodes = OtherEpisodes(episodes, episodesdictionary.ElementAt(0).Key, animelength);
+                episodes = AnimeInfo.ExistingEpisodes(animename);
+                episodes = AnimeInfo.OtherEpisodes(episodes, episodesdictionary.ElementAt(0).Key, animelength);
 
                 string strepisodes = string.Empty;
                 foreach (var i in episodes)
@@ -66,7 +67,7 @@ namespace BADownloader
                 }
             }
 
-            int startpoint = EpisodeInput(animelength, episodes);
+            int startpoint = AnimeInfo.EpisodeInput(animelength, episodes);
             string quality = QualityInput();
 
             Anime animeinfo = new(animename, episodesdictionary, episodes, url, startpoint, quality, genres, animelength);
@@ -135,43 +136,6 @@ namespace BADownloader
             return eps;
         }
 
-        private static int EpisodeInput(int episodes_length, int[] episodes)
-        {
-            var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
-
-            if (!int.TryParse(str, out int input))
-                throw new Exception("Isso não é um número!");
-            else
-            {
-                if (!episodes.Any(x => x == input))
-                {
-                    if (input < 0) input = 0;
-                    else if (input > episodes_length) input = episodes_length;
-                }
-                return input;
-            }
-        }
-
-        public static int DownloadInput()
-        {
-            var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
-                .Title("Quantos downloads deseja ter? [green]1[/], [green]2[/], [green]3[/], [green]4[/] ou [green]5[/]\nRecomendado um PC bom suficiente para baixar 5/4/3/2 arquivos simultâneamente")
-                .PageSize(10)
-                .AddChoices(new [] 
-                {
-                    "1", "2", "3", "4", "5"
-                }));
-
-            if (!int.TryParse(str, out int input))
-                throw new Exception("Isso não é um número!");
-            else
-            {
-                if (input < 1) input = 1;
-                else if (input > 5) input = 5;
-                return input;
-            }
-        }
-
         private static string QualityInput()
         {
             var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
@@ -198,77 +162,6 @@ namespace BADownloader
                 return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
             }
 
-        }
-
-        private static bool CheckExistingFolder(string animename)
-        {
-            DirectoryInfo dir = new("Animes/");
-
-            foreach (var item in dir.GetDirectories())
-            {
-                if ( item.Name == animename )
-                {
-                    var files = item.GetFiles();
-                    if (files is not null) return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static int GetEpisodeParsed(string filename)
-        {
-            int one = filename.LastIndexOf('-') + 1;
-
-            int[] numbers = new int[4] 
-            {
-                one, one + 1, one + 2, one + 3
-            };
-
-            string numberconcat = string.Empty;
-
-            for (int i = 0; i < 4; i++)
-            {
-                if (!int.TryParse(filename.AsSpan(numbers[i], 1), out int num))
-                {
-                    break;
-                }
-                
-                numberconcat += num.ToString();
-            }
-
-            return int.Parse(numberconcat);
-        }
-
-        private static int[] ExistingEpisodes(string animename)
-        {
-            DirectoryInfo dir = new($"Animes/{animename}");
-            int length = dir.GetFiles().Length;
-
-            int[] epi = new int[length];
-
-            for (int i = 0; i < length; i++)
-            {
-                string name = dir.GetFiles().ElementAt(i).Name;
-
-                epi[i] = GetEpisodeParsed(name);
-            }
-
-            return epi;
-        }
-
-        private static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
-        {
-            int[] episodes_all = new int[animelength];
-            int x = startepisode;
-
-            for (int i = 0; i < animelength; i++)
-            {
-                episodes_all[i] = x;
-                x++;
-            }
-
-            return episodes_all.Except(episodes).ToArray();
         }
     }
 }
