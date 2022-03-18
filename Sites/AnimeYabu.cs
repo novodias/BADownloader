@@ -4,78 +4,110 @@ using Spectre.Console;
 
 namespace BADownloader.Sites
 {
-    public class AnimeYabu : AnimeInfo, IAnimeInfo
+    public class AnimeYabu : Anime
     {
-        public async Task<Anime> GetAnimeAsync(string url, HtmlWeb web)
+        private string Quality { get; }
+        public AnimeYabu( HtmlDocument Document, string Url ) : base()
         {
-            var doc = await web.LoadFromWebAsync(url);
-
-            string Name = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[1]/div[2]/div[2]/h1").InnerText;
-
-            var EpisodesDictionary = GetEpisodesURL(doc);
-            var AnimeLength = EpisodesDictionary.Count;
-
-            int[] Episodes = new int[AnimeLength];
-            for (int i = 0; i < AnimeLength; i++)
-            {
-                Episodes[i] = EpisodesDictionary.ElementAt(i).Key;
-            }
-
-            string Genres = GetGenres(doc);
-
+            string name = Document.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[1]/div[2]/div[2]/h1").InnerText;
             string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
             string pattern = "[" + chars + "]";
-            Name = Regex.Replace(Name, pattern, "");
+            Name = Regex.Replace(name, pattern, "");
 
-            AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, EpisodesDictionary.Last().Key)));
-            AnsiConsole.Write(new Markup(string.Format($"{Genres}\n")));
+            URL = Url;
 
-            // Transformar isso em um método no AnimeInfo.
-            if (CheckUserFolder(Name))
+            Dictionary<int, string> Links = GetEpisodesURL(Document);
+
+            int[] episodes = new int[Links.Count];
+            for (int i = 0; i < Links.Count; i++)
             {
-                Episodes = ExistingEpisodes(Name);
-                Episodes = OtherEpisodes(Episodes, EpisodesDictionary.ElementAt(0).Key, AnimeLength);
+                episodes[i] = Links.ElementAt(i).Key;
+            }
 
-                string strepisodes = string.Empty;
-                foreach (var i in Episodes)
+            AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, Links.Last().Key)));
+
+            if ( AnimesData.CheckUserFolder( Name ) )
+            {
+                episodes = AnimesData.ExistingEpisodes( Name );
+                episodes = AnimesData.OtherEpisodes( episodes, Links.ElementAt(0).Key, Links.Count );
+
+                string StrEpisodes = string.Empty;
+                foreach ( var i in episodes )
                 {
-                    if (strepisodes == string.Empty)
-                        strepisodes = $"Episódio(s) faltando: {i}";
+                    if ( StrEpisodes.Equals( string.Empty ) )
+                        StrEpisodes = $"Episódio(s) faltando: {i}";
                     else
-                        strepisodes += $", {i}";
+                        StrEpisodes += $", {i}";
                 }
-                Console.WriteLine(strepisodes);
+                Console.WriteLine( StrEpisodes );
 
                 Dictionary<int, string> temporary = new();
-                for (int i = 0; i < Episodes.Length; i++)
+                for ( int i = 0; i < episodes.Length; i++ )
                 {
-                    temporary.Add(Episodes[i], EpisodesDictionary.Single(ctx => ctx.Key == Episodes[i]).Value);
+                    temporary.Add( episodes[i], Links.Single( ctx => ctx.Key == episodes[i]).Value );
                 }
-                EpisodesDictionary = temporary;
+                Links = temporary;
             }
-
-            // TODO: 
-            // Isso não faz sentido, usar o EpisodesDictionary 
-            // ao invés de criar episódios do nada
             else
             {
-                for (int i = 0; i < AnimeLength; i++)
+                int index = 0;
+                foreach ( var key in Links.Keys )
                 {
-                    Episodes[i] = i + 1;
+                    episodes[index] = key;
+                    index++;
                 }
             }
 
-            int startpoint = EpisodeInput(AnimeLength, Episodes);
-            
-            // Ainda não implementado!
-            // string quality = QualityInput();
-
-            throw new Exception("AnimeYabu ainda não implementado!");
-
-            // return new Anime( Name, EpisodesDictionary, Episodes, url, startpoint, "", Genres, AnimeLength );
+            Episodes = episodes;
+            LinkDownloads = Links;
+            StartCount = AnimesData.EpisodeInput( AnimeLength, Episodes );
+            Quality = AnimeYabu.QualityInput();
         }
 
-        private static IDictionary<int, string> GetEpisodesURL(HtmlDocument doc)
+        public override async Task<string> GetSourceLink( string episodeURL )
+        {
+            Dictionary<string, string> headers = new() 
+            {
+                { "age", "25" },
+                { "alt-svc", "h3=\":443\"; ma=86400, h3-29=\":443\"; ma=86400" },
+                { "cache-control", "max-age=1800" },
+                { "cf-apo-via", "tcache" },
+                { "cf-cache-status", "HIT" },
+                { "cf-ray", "6ed971d1ed626f86-JDO" },
+                { "expect-ct", "max-age=604800, report-uri=\"https://report-uri.cloudfare.com/cdn-cgi/beacon/expect-ct" },
+                { "nel", "{\"sucess_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}" },
+                { "report-to", "{\"endpoints\":[{\"url\":\"https://a.nel.cloudflare.com/report/v3?s=Zxvb1kVGbogPecjtb0Ktzt/ticEQaVIBeTNrxw2k+Zt+D2YiLd+LD5zJ+5jXyXVo7LcABld+FArmOYnl3VMT7hxs+3j4xeeu8qAxgrA/aAPMEV4yI5nyoMkmXXa2gUc=\"}],\"group\":\"cf-nel\",\"max_age\":604800}" },
+                { "server", "cloudfare" },
+                { "vary", "Accept-Encoding" },
+                { "x-cache", "MISS" },
+                { "x-page-speed", "1.13.35.2-0" },
+            };
+            
+            var response = await BADHttp.GetResponseMessageAsync( episodeURL, headers );
+
+            var src = await response.Content.ReadAsStringAsync();
+
+            var HDindex = src.IndexOf( "type: \"video/mp4\",label: \"HD\",file: \"" ) + 37;
+            var SDindex = src.IndexOf( "type: \"video/mp4\",label: \"SD\",file: \"" ) + 37;
+
+            string mp4link;
+            if ( Quality == "HD" )
+            {
+                string HD = src[HDindex..];
+                var endlink = HD.IndexOf( "\"" );
+                mp4link = HD[0..endlink];
+            }
+            else 
+            {
+                string SD = src[SDindex..];
+                var endlink = SD.IndexOf( "\"" );
+                mp4link = SD[0..endlink];
+            }
+
+            return mp4link;
+        }
+
+        private static Dictionary<int, string> GetEpisodesURL(HtmlDocument doc)
         {
             bool IsPaged = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[3]/div[8]").HasChildNodes;
 
@@ -93,11 +125,11 @@ namespace BADownloader.Sites
                     string Link = ClipLink.GetAttributeValue("href", "");
                     string strNumber = ClipLink.GetAttributeValue("title", "");
 
-                    int Number;
-                    if ( !strNumber.Contains("(HD)"))
-                        Number = int.Parse(strNumber[strNumber.LastIndexOf("Episódio ")..strNumber.Length].Trim());
-                    else
-                        Number = int.Parse(strNumber[strNumber.LastIndexOf("Episódio ")..strNumber.IndexOf(" (HD)")].Trim());
+                    int Number = int.Parse(
+                            Regex.Replace(strNumber[strNumber.IndexOf("Epis")..strNumber.Length], "[^0-9.]", "")
+                    );
+
+                    Console.WriteLine(Link);
 
                     EpisodesDictionary.Add(Number, Link);
                 }
@@ -122,11 +154,24 @@ namespace BADownloader.Sites
             }
         }
 
-        private static string GetGenres(HtmlDocument doc)
+        private static string QualityInput()
         {
-            var GenresNode = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[1]/div[2]/div[4]/b");
+            var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
+                .PageSize(5)
+                .AddChoices(new []
+                {
+                    "SD", "HD"
+                }));
 
-            return GenresNode.InnerText;
+            return str;
         }
+
+        // private static string GetGenres(HtmlDocument doc)
+        // {
+        //     var GenresNode = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[1]/div[2]/div[4]/b");
+
+        //     return GenresNode.InnerText;
+        // }
     }
 }

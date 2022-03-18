@@ -18,13 +18,12 @@ namespace BADownloader
 
             try
             {
-                Anime anime = await GetAnimeTypeAsync();
-                
-                // --------------------------------------------
+                IAnime anime = await GetAnimeTypeAsync();                
+                // anime.WriteDebug();
 
                 int downloadnum = DownloadInput();
 
-                DownloadManager Manage = new(downloadnum, anime.AnimeLength, anime);
+                DownloadManager Manage = new( anime, downloadnum );
 
                 await Manage.StartDownloadAsync();
 
@@ -37,37 +36,39 @@ namespace BADownloader
             }
             finally
             {
+                // Não sei se isso faz alguma diferença
+                BADHttp.Dispose();
+
                 Console.WriteLine("Pressione qualquer botão pra sair");
                 Console.ReadKey();
             }
         }
 
-        static async Task<Anime> GetAnimeTypeAsync()
+        static async Task<IAnime> GetAnimeTypeAsync()
         {
             AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
+            AnsiConsole.Write(new Markup("Exemplo de url: https://animeyabu.com/anime/kimetsu-no-yaiba-yuukaku-hen-part-3\n"));
+            
             string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
 
-            IAnimeInfo info;
+            IAnime anime;
+            HtmlWeb web = new();
+            HtmlDocument doc = await web.LoadFromWebAsync(url);
 
             if (url.StartsWith("https://betteranime.net"))
             {
-                info = new BetterAnime();
+                anime = new BetterAnime(doc, url);
             }
             else if (url.StartsWith("https://animeyabu.com"))
             {
-                info = new AnimeYabu();
+                anime = new AnimeYabu(doc, url);
             }
             else
             {
                 throw new Exception("O site que você colocou não é suportado");
             }
             
-            return await GetAnimeInfoAsync( info, url, new HtmlWeb() );
-        }
-
-        static Task<Anime> GetAnimeInfoAsync(IAnimeInfo info, string url, HtmlWeb web)
-        {
-            return info.GetAnimeAsync(url, web);
+            return anime;
         }
 
         static int DownloadInput()

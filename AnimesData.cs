@@ -1,14 +1,12 @@
-using System.Text.RegularExpressions;
-using HtmlAgilityPack;
 using Spectre.Console;
 
 namespace BADownloader.Sites
 {
-    public class AnimeInfo
+    public class AnimesData
     {
-        private static DirectoryInfo UserDir = new("Animes/");
+        private static readonly DirectoryInfo UserDir = new("Animes/");
 
-        protected static int EpisodeInput(int episodes_length, int[] episodes)
+        public static int EpisodeInput(int episodes_length, int[] episodes)
         {
             var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
 
@@ -25,7 +23,7 @@ namespace BADownloader.Sites
             }
         }
 
-        protected static bool CheckUserFolder(string animename)
+        public static bool CheckUserFolder(string animename)
         {
             if ( !UserDir.Exists ) 
             {
@@ -48,7 +46,7 @@ namespace BADownloader.Sites
             return false;
         }
 
-        protected static int GetEpisodeParsed(string filename)
+        public static int GetEpisodeParsed(string filename)
         {
             int one = filename.LastIndexOf('-') + 1;
 
@@ -72,16 +70,16 @@ namespace BADownloader.Sites
             return int.Parse(numberconcat);
         }
 
-        protected static int[] ExistingEpisodes(string animename)
+        public static int[] ExistingEpisodes(string animename)
         {
-            DirectoryInfo dir = new($"Animes/{animename}");
-            int length = dir.GetFiles().Length;
+            DirectoryInfo AnimeDir = new($"Animes/{animename}");
+            int Length = AnimeDir.GetFiles().Length;
 
-            int[] epi = new int[length];
+            int[] epi = new int[Length];
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < Length; i++)
             {
-                string name = dir.GetFiles().ElementAt(i).Name;
+                string name = AnimeDir.GetFiles().ElementAt(i).Name;
 
                 epi[i] = GetEpisodeParsed(name);
             }
@@ -89,7 +87,7 @@ namespace BADownloader.Sites
             return epi;
         }
 
-        protected static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
+        public static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
         {
             int[] episodes_all = new int[animelength];
             int x = startepisode;
