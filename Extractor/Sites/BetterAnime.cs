@@ -3,9 +3,9 @@ using HtmlAgilityPack;
 using Newtonsoft.Json;
 using Spectre.Console;
 
-namespace BADownloader.Sites
+namespace BADownloader.Extractor.Sites
 {
-    public class BetterAnime : Anime
+    public class BetterAnime : Extractor
     {
         private string Quality { get; }
         public BetterAnime( HtmlDocument Document , string Url ) : base()

@@ -1,8 +1,6 @@
-using HtmlAgilityPack;
-
-namespace BADownloader
+namespace BADownloader.Extractor
 {
-    public class Anime : IAnime
+    public class Extractor : IExtractor
     {
         private string? _name;
         private Dictionary<int, string>? _linkdownloads;
@@ -83,12 +81,12 @@ namespace BADownloader
             }
         }
 
-        public Anime() 
+        public Extractor() 
         {
 
         }
 
-        public Anime(string name, Dictionary<int, string> links, int[] episodes, string url, int startcount)
+        public Extractor(string name, Dictionary<int, string> links, int[] episodes, string url, int startcount)
         {
             this.Name = name;
             this.LinkDownloads = links;

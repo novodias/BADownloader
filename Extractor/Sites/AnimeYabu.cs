@@ -2,9 +2,9 @@ using System.Text.RegularExpressions;
 using HtmlAgilityPack;
 using Spectre.Console;
 
-namespace BADownloader.Sites
+namespace BADownloader.Extractor.Sites
 {
-    public class AnimeYabu : Anime
+    public class AnimeYabu : Extractor
     {
         private string Quality { get; }
         public AnimeYabu( HtmlDocument Document, string Url ) : base()

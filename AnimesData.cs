@@ -1,6 +1,6 @@
 using Spectre.Console;
 
-namespace BADownloader.Sites
+namespace BADownloader
 {
     public class AnimesData
     {

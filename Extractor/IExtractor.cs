@@ -1,8 +1,6 @@
-using HtmlAgilityPack;
-
-namespace BADownloader
+namespace BADownloader.Extractor
 {
-    public interface IAnime
+    public interface IExtractor
     {
         public string Name { get; }
         public Dictionary<int, string> LinkDownloads { get; }
