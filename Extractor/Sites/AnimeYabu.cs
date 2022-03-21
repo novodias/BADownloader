@@ -7,16 +7,23 @@ namespace BADownloader.Extractor.Sites
     public class AnimeYabu : Extractor
     {
         private string Quality { get; }
-        public AnimeYabu( HtmlDocument Document, string Url ) : base()
+
+        private AnimeYabu( string name, Dictionary<int, string> links, int[] episodes, string url, int startcount, string quality ) : base( name, links, episodes, url, startcount )
         {
-            string name = Document.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[1]/div[2]/div[2]/h1").InnerText;
+            this.Quality = quality;
+        }
+
+        public static async Task<AnimeYabu> InitializeExtractorAsync( HtmlDocument Document, string Url )
+        {
+            string name = Document.DocumentNode.SelectSingleNode("//div[contains(@class, 'anime-title')]").InnerText;
             string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
             string pattern = "[" + chars + "]";
-            Name = Regex.Replace(name, pattern, "");
+            string Name = Regex.Replace(name, pattern, "");
 
-            URL = Url;
+            string URL = Url;
 
-            Dictionary<int, string> Links = GetEpisodesURL(Document);
+            Dictionary<int, string> Links = await GetEpisodesURL( Document, URL );
+            int AnimeLength = Links.Count;
 
             int[] episodes = new int[Links.Count];
             for (int i = 0; i < Links.Count; i++)
@@ -58,10 +65,12 @@ namespace BADownloader.Extractor.Sites
                 }
             }
 
-            Episodes = episodes;
-            LinkDownloads = Links;
-            StartCount = AnimesData.EpisodeInput( AnimeLength, Episodes );
-            Quality = AnimeYabu.QualityInput();
+            var Episodes = episodes;
+            var LinkDownloads = Links;
+            var StartCount = AnimesData.EpisodeInput( AnimeLength, Episodes );
+            var Quality = AnimeYabu.QualityInput();
+
+            return new AnimeYabu( Name, LinkDownloads, Episodes, URL, StartCount, Quality );
         }
 
         public override async Task<string> GetSourceLink( string episodeURL )
@@ -107,51 +116,81 @@ namespace BADownloader.Extractor.Sites
             return mp4link;
         }
 
-        private static Dictionary<int, string> GetEpisodesURL(HtmlDocument doc)
+        private async static Task<Dictionary<int, string>> GetEpisodesURL( HtmlDocument doc, string URL )
         {
-            bool IsPaged = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[3]/div[8]").HasChildNodes;
+            bool IsPaged = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'naco')]").HasChildNodes;
 
             if ( !IsPaged )
             {
-                var ChildsNodes = doc.DocumentNode.SelectSingleNode("//*[@id='channel-content']/div[3]").Descendants();
-
-                var VideosNodes = ChildsNodes.Where(node => node.HasClass("video"));
-
-                Dictionary<int, string> EpisodesDictionary = new();
-                foreach (var node in VideosNodes)
-                {
-                    var ClipLink = node.Descendants().Single(node => node.HasClass("video-thumb")).FirstChild;
-
-                    string Link = ClipLink.GetAttributeValue("href", "");
-                    string strNumber = ClipLink.GetAttributeValue("title", "");
-
-                    int Number = int.Parse(
-                            Regex.Replace(strNumber[strNumber.IndexOf("Epis")..strNumber.Length], "[^0-9.]", "")
-                    );
-
-                    Console.WriteLine(Link);
-
-                    EpisodesDictionary.Add(Number, Link);
-                }
-
-                return EpisodesDictionary;
+                return AnimeYabu.GetAnimeYabuEpisodes( doc );
             }
             else
             {
-                /*
-                Pra ser implementado.
+                var ChildsNodes = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'naco')]");
+                var PagesNumNodes = ChildsNodes.Descendants().Where( childs => childs.HasClass("page-numbers") );
 
-                Como funcionará?
-                Usando a seguinte url: https://animeyabu.com/anime/one-piece/page/X
-                One Piece possui atualmente 34 páginas, inserida 
-                na página principal no 'div class=naco'.
+                int tempPages = 0;
+                foreach ( var node in PagesNumNodes )
+                {
+                    if ( int.TryParse( node.InnerText, out int num ) && num > tempPages )
+                        tempPages = num;
+                }
 
-                A ideia é pegar o número de páginas no 'naco'
-                e usar um for loop e pegar os links dos episódios.
-                */
+                HtmlWeb web = new();
+                Dictionary<int, string> linkdownloads = new();
+                string tempLink;
+                for ( int page = 0; page < tempPages; page++ )
+                {
+                    if ( page == 0 )
+                        tempLink = URL;
+                    else
+                        tempLink = URL + "/page/" + (page + 1);
+                    
+                    HtmlDocument docTemp = await web.LoadFromWebAsync( tempLink );
+                    var tempDictionary = AnimeYabu.GetAnimeYabuEpisodes( docTemp );
+                    foreach ( var item in tempDictionary )
+                    {
+                        if ( !linkdownloads.TryAdd( item.Key, item.Value ) )
+                            System.Console.WriteLine("Não foi possível adicionar o seguinte episódio: " + item.Key + " | " + item.Value);
+                    }
+                }
 
-                throw new Exception("Feature ainda não implementada com animes com mais de uma página");
+                return linkdownloads;
             }
+        }
+
+        private static Dictionary<int, string> GetAnimeYabuEpisodes( HtmlDocument doc )
+        {
+            var ChildsNodes = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'loop-content phpvibe-video-list miau')]").Descendants();
+
+            var VideosNodes = ChildsNodes.Where(node => node.HasClass("video"));
+
+            Dictionary<int, string> EpisodesDictionary = new();
+            foreach (var node in VideosNodes)
+            {
+                var ClipLink = node.Descendants().Single(node => node.HasClass("video-thumb")).FirstChild;
+
+                string Link = ClipLink.GetAttributeValue( "href", "" );
+                string strNumber = ClipLink.GetAttributeValue( "title", "" );
+
+                int Number;
+                if ( strNumber.Contains( "Epis", StringComparison.OrdinalIgnoreCase ) )
+                    Number = int.Parse(
+                            Regex.Replace( strNumber[strNumber.IndexOf("Epis")..strNumber.Length], "[^0-9.]", "" )
+                    );
+                else if ( strNumber.Contains( "OVA", StringComparison.OrdinalIgnoreCase ) )
+                    Number = int.Parse(
+                            Regex.Replace( strNumber[strNumber.IndexOf("OVA")..strNumber.Length], "[^0-9.]", "" )
+                    );
+                else
+                    Number = 0;
+
+                Console.WriteLine( Link );
+
+                EpisodesDictionary.Add( Number, Link );
+            }
+
+            return EpisodesDictionary;
         }
 
         private static string QualityInput()

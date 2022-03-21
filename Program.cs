@@ -1,6 +1,7 @@
-﻿using BADownloader.Sites;
+﻿using Spectre.Console;
 using HtmlAgilityPack;
-using Spectre.Console;
+using BADownloader.Extractor;
+using BADownloader.Extractor.Sites;
 
 namespace BADownloader
 {
@@ -18,7 +19,7 @@ namespace BADownloader
 
             try
             {
-                IAnime anime = await GetAnimeTypeAsync();                
+                IExtractor anime = await GetAnimeTypeAsync();                
                 // anime.WriteDebug();
 
                 int downloadnum = DownloadInput();
@@ -44,14 +45,14 @@ namespace BADownloader
             }
         }
 
-        static async Task<IAnime> GetAnimeTypeAsync()
+        static async Task<IExtractor> GetAnimeTypeAsync()
         {
             AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
             AnsiConsole.Write(new Markup("Exemplo de url: https://animeyabu.com/anime/kimetsu-no-yaiba-yuukaku-hen-part-3\n"));
             
             string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
 
-            IAnime anime;
+            IExtractor anime;
             HtmlWeb web = new();
             HtmlDocument doc = await web.LoadFromWebAsync(url);
 
@@ -61,7 +62,7 @@ namespace BADownloader
             }
             else if (url.StartsWith("https://animeyabu.com"))
             {
-                anime = new AnimeYabu(doc, url);
+                anime = await AnimeYabu.InitializeExtractorAsync( doc, url );
             }
             else
             {
