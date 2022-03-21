@@ -75,6 +75,9 @@ namespace BADownloader.Extractor.Sites
 
         public override async Task<string> GetSourceLink( string episodeURL )
         {
+            // Alguns animes possuem um URL direto no source da classe video
+            // Exemplo: https://pitou.goyabu.com/beelzebub/60.mp4
+            
             Dictionary<string, string> headers = new() 
             {
                 { "age", "25" },
