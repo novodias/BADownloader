@@ -7,20 +7,27 @@ namespace BADownloader
 {
     class Program
     {
-        public static void Main()
+
+        public static bool IsDebugMode = false;
+
+        public static void Main(string[] args)
         {
-            var pro = new Program();
-            pro.MainAsync().GetAwaiter().GetResult();
+            if ( args.Contains("--debug") )
+                IsDebugMode = true;
+
+            MainAsync().GetAwaiter().GetResult();
         }
 
-        public async Task MainAsync()
+        public static async Task MainAsync()
         {
             Console.Title = "BADownloader";
 
             try
             {
-                IExtractor anime = await GetAnimeTypeAsync();                
-                // anime.WriteDebug();
+                IExtractor anime = await GetAnimeTypeAsync();
+                
+                if ( IsDebugMode )                
+                    anime.WriteDebug();
 
                 int downloadnum = DownloadInput();
 
@@ -51,25 +58,26 @@ namespace BADownloader
             AnsiConsole.Write(new Markup("Exemplo de url: https://animeyabu.com/anime/kimetsu-no-yaiba-yuukaku-hen-part-3\n"));
             
             string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
+            bool IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => url.Contains(ctx) );
 
-            IExtractor anime;
+            while ( !IsSiteSupported )
+            {
+                AnsiConsole.Write(new Markup("[red underline]URL inválido[/]\n"));
+                url = AnsiConsole.Ask<string>("Insira a URL do anime:");
+                IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => ctx == url );
+            }
+
             HtmlWeb web = new();
             HtmlDocument doc = await web.LoadFromWebAsync(url);
 
-            if (url.StartsWith("https://betteranime.net"))
+            var siteEnum = AvailableSites.GetSite( url );
+
+            return siteEnum switch
             {
-                anime = new BetterAnime(doc, url);
-            }
-            else if (url.StartsWith("https://animeyabu.com"))
-            {
-                anime = await AnimeYabu.InitializeExtractorAsync( doc, url );
-            }
-            else
-            {
-                throw new Exception("O site que você colocou não é suportado");
-            }
-            
-            return anime;
+                SiteEnum.BetterAnime => new BetterAnime(doc, url),
+                SiteEnum.AnimeYabu => await AnimeYabu.InitializeExtractorAsync(doc, url),
+                _ => throw new Exception("Algo errado ocorreu")
+            };
         }
 
         static int DownloadInput()
