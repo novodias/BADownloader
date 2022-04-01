@@ -27,6 +27,9 @@ namespace BADownloader
         {
             if ( !UserDir.Exists ) 
             {
+                if ( Program.IsDebugMode )
+                    System.Console.WriteLine( nameof(CheckUserFolder) + "\nUserDir.Exists: " + UserDir.Exists + "\nDiretórios criado." );
+                    
                 UserDir.Create();
                 UserDir.CreateSubdirectory(animename);
                 return false;
@@ -36,11 +39,21 @@ namespace BADownloader
             {
                 if ( item.Name == animename )
                 {
+                    if ( Program.IsDebugMode )
+                        System.Console.WriteLine( nameof(CheckUserFolder) + "\nAnime encontrado" );
+
                     var files = item.GetFiles();
-                    if ( files is not null ) 
+                    if ( files is not null )
+                    {
+                        if ( Program.IsDebugMode )
+                            System.Console.WriteLine( nameof(CheckUserFolder) + "\nEpisódios baixados encontrados" );
                         return true;
+                    }
                 }
             }
+
+            if ( Program.IsDebugMode )
+                System.Console.WriteLine( nameof(CheckUserFolder) + "\nUserDir.Exists: " + UserDir.Exists + "\nDiretório do anime criado." );
 
             UserDir.CreateSubdirectory(animename);
             return false;
@@ -67,7 +80,8 @@ namespace BADownloader
 
         public static int[] ExistingEpisodes(string animename)
         {
-            DirectoryInfo AnimeDir = new($"Animes/{animename}");
+            // DirectoryInfo AnimeDir = new($"Animes/{animename}");
+            DirectoryInfo AnimeDir = new( Path.Combine(UserDir.FullName + animename) );
             int Length = AnimeDir.GetFiles().Length;
 
             int[] epi = new int[Length];

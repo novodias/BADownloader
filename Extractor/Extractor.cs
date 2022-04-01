@@ -118,5 +118,41 @@ namespace BADownloader.Extractor
         }
 
         public virtual Task<string> GetSourceLink(string episodeURL) => throw new Exception("GetSourceLink vazio!");
+
+        protected static void CheckAnimeFolder(string Name, ref int[] episodes, ref Dictionary<int, string> links)
+        {
+            if ( AnimesData.CheckUserFolder( Name ) )
+            {
+                episodes = AnimesData.ExistingEpisodes( Name );
+                episodes = AnimesData.OtherEpisodes( episodes, links.ElementAt(0).Key, links.Count );
+
+                string episodesString = string.Empty;
+                foreach ( var i in episodes )
+                {
+                    if ( episodesString.Equals( string.Empty ) )
+                        episodesString = $"Episódio(s) faltando: {i}";
+                    else
+                        episodesString += $", {i}";
+                }
+                Console.WriteLine( episodesString );
+
+                Dictionary<int, string> temporary = new();
+                for ( int i = 0; i < episodes.Length; i++ )
+                {
+                    int episode_index_value = episodes[i];
+                    temporary.Add( episodes[i], links.Single( ctx => ctx.Key == episode_index_value ).Value );
+                }
+                links = temporary;
+            }
+            else
+            {
+                int index = 0;
+                foreach ( var key in links.Keys )
+                {
+                    episodes[index] = key;
+                    index++;
+                }
+            }
+        }
     }
 }

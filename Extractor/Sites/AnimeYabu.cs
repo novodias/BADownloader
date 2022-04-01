@@ -33,37 +33,39 @@ namespace BADownloader.Extractor.Sites
 
             AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, Links.Last().Key)));
 
-            if ( AnimesData.CheckUserFolder( Name ) )
-            {
-                episodes = AnimesData.ExistingEpisodes( Name );
-                episodes = AnimesData.OtherEpisodes( episodes, Links.ElementAt(0).Key, Links.Count );
+            CheckAnimeFolder( Name, ref episodes, ref Links );
 
-                string StrEpisodes = string.Empty;
-                foreach ( var i in episodes )
-                {
-                    if ( StrEpisodes.Equals( string.Empty ) )
-                        StrEpisodes = $"Episódio(s) faltando: {i}";
-                    else
-                        StrEpisodes += $", {i}";
-                }
-                Console.WriteLine( StrEpisodes );
+            // if ( AnimesData.CheckUserFolder( Name ) )
+            // {
+            //     episodes = AnimesData.ExistingEpisodes( Name );
+            //     episodes = AnimesData.OtherEpisodes( episodes, Links.ElementAt(0).Key, Links.Count );
 
-                Dictionary<int, string> temporary = new();
-                for ( int i = 0; i < episodes.Length; i++ )
-                {
-                    temporary.Add( episodes[i], Links.Single( ctx => ctx.Key == episodes[i]).Value );
-                }
-                Links = temporary;
-            }
-            else
-            {
-                int index = 0;
-                foreach ( var key in Links.Keys )
-                {
-                    episodes[index] = key;
-                    index++;
-                }
-            }
+            //     string StrEpisodes = string.Empty;
+            //     foreach ( var i in episodes )
+            //     {
+            //         if ( StrEpisodes.Equals( string.Empty ) )
+            //             StrEpisodes = $"Episódio(s) faltando: {i}";
+            //         else
+            //             StrEpisodes += $", {i}";
+            //     }
+            //     Console.WriteLine( StrEpisodes );
+
+            //     Dictionary<int, string> temporary = new();
+            //     for ( int i = 0; i < episodes.Length; i++ )
+            //     {
+            //         temporary.Add( episodes[i], Links.Single( ctx => ctx.Key == episodes[i]).Value );
+            //     }
+            //     Links = temporary;
+            // }
+            // else
+            // {
+            //     int index = 0;
+            //     foreach ( var key in Links.Keys )
+            //     {
+            //         episodes[index] = key;
+            //         index++;
+            //     }
+            // }
 
             var Episodes = episodes;
             var LinkDownloads = Links;
