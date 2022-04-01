@@ -67,7 +67,7 @@ namespace BADownloader
             {
                 AnsiConsole.Write(new Markup("[red underline]URL inválido[/]\n"));
                 url = AnsiConsole.Ask<string>("Insira a URL do anime:");
-                IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => ctx == url );
+                IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => url.Contains(ctx) );
             }
 
             HtmlWeb web = new();
