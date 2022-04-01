@@ -108,6 +108,7 @@ namespace BADownloader
                         break;
                     
                     tasks.Add( DownloadAsync( await this.Anime.GetSourceLink( list.ElementAt(i) ), i ) );
+                    i++;
                 }
 
                 await Task.WhenAll( tasks );
