@@ -81,11 +81,22 @@ namespace BADownloader.Extractor
             }
         }
 
+        /// <summary>
+        /// Classe base dos sites sem paramêtros
+        /// </summary>
         public Extractor() 
         {
 
         }
 
+        /// <summary>
+        /// Classe base dos sites
+        /// </summary>
+        /// <param name="name">Nome do anime</param>
+        /// <param name="links">(Key) Número do episódio e (Value) Link do episódio</param>
+        /// <param name="episodes">Array com os episódios</param>
+        /// <param name="url">URL do anime</param>
+        /// <param name="startcount">Episódio que usuário escolheu</param>
         public Extractor(string name, Dictionary<int, string> links, int[] episodes, string url, int startcount)
         {
             this.Name = name;
@@ -117,8 +128,20 @@ namespace BADownloader.Extractor
             Console.WriteLine("Index: " + this.Index);
         }
 
+        /// <summary>
+        /// Pega a source link do episódio do anime, geralmente por requests ou web scraping
+        /// </summary>
+        /// <param name="episodeURL">Link do site/episódio</param>
+        /// <returns>String do source link do episódio</returns>
+        /// <exception cref="Exception"></exception>
         public virtual Task<string> GetSourceLink(string episodeURL) => throw new Exception("GetSourceLink vazio!");
 
+        /// <summary>
+        /// Verifica se a pasta Animes existe, e então a pasta do anime e em seguida se há episódios baixados.
+        /// </summary>
+        /// <param name="Name">Nome do anime</param>
+        /// <param name="episodes">Array com os episódios</param>
+        /// <param name="links">(Key) Número do episódio e (Value) Link do episódio</param>
         protected static void CheckAnimeFolder(string Name, ref int[] episodes, ref Dictionary<int, string> links)
         {
             if ( AnimesData.CheckUserFolder( Name ) )

@@ -6,6 +6,13 @@ namespace BADownloader
     {
         private static readonly DirectoryInfo UserDir = new("Animes/");
 
+        /// <summary>
+        /// Método input, o usuário insere o episódio de onde quer começar a baixar.
+        /// </summary>
+        /// <param name="episodes_length">Tamanho de episódios do anime</param>
+        /// <param name="episodes">Array dos episódios</param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static int EpisodeInput(int episodes_length, int[] episodes)
         {
             var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
@@ -59,6 +66,11 @@ namespace BADownloader
             return false;
         }
 
+        /// <summary>
+        /// Pega o nome do arquivo, e pega o número do episódio
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <returns>Número do episódio</returns>
         public static int GetEpisodeParsed(string filename)
         {
             int one = filename.LastIndexOf('-') + 1;
@@ -78,6 +90,11 @@ namespace BADownloader
             return int.Parse(numberconcat);
         }
 
+        /// <summary>
+        /// Cria um array com os episódios baixados do anime.
+        /// </summary>
+        /// <param name="animename"></param>
+        /// <returns>Array dos episódios baixados</returns>
         public static int[] ExistingEpisodes(string animename)
         {
             // DirectoryInfo AnimeDir = new($"Animes/{animename}");
@@ -96,6 +113,13 @@ namespace BADownloader
             return epi;
         }
 
+        /// <summary>
+        /// Cria um novo array com os episódios que falta baixar.
+        /// </summary>
+        /// <param name="episodes">Array dos episódios</param>
+        /// <param name="startepisode">Episódio que o usuário escolheu</param>
+        /// <param name="animelength">Tamanho do anime</param>
+        /// <returns>Array com episódios restantes</returns>
         public static int[] OtherEpisodes(int[] episodes, int startepisode, int animelength)
         {
             int[] episodes_all = new int[animelength];

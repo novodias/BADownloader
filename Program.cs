@@ -55,6 +55,11 @@ namespace BADownloader
             }
         }
 
+        /// <summary>
+        /// Seleciona o extrator necessário pro site inserido
+        /// </summary>
+        /// <returns>Extrator</returns>
+        /// <exception cref="Exception"></exception>
         static async Task<IExtractor> GetAnimeTypeAsync()
         {
             AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));

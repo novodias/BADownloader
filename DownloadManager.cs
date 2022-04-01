@@ -48,6 +48,11 @@ namespace BADownloader
                 //     this.URLsFailed.Add( failedURL );
             }
         }
+
+        /// <summary>
+        /// Inicia o ManageDownloader.
+        /// </summary>
+        /// <returns>Task</returns>
         public async Task StartDownloadAsync()
         {
             Console.WriteLine("\nComeçando download.");
@@ -59,6 +64,10 @@ namespace BADownloader
             await this.RetryDownload();
         }
 
+        /// <summary>
+        /// Verifica se há URLsFailed, se sim, pergunta ao usuário se deseja baixar os episódios restantes e então os baixa.
+        /// </summary>
+        /// <returns>Task</returns>
         private async Task RetryDownload()
         {
             if ( !( this.URLsFailed.Count > 0 ) )
@@ -75,6 +84,10 @@ namespace BADownloader
             }
         }
 
+        /// <summary>
+        /// Instala os episódios do anime
+        /// </summary>
+        /// <returns>Task</returns>
         private async Task ManageDownloader()
         {
             List<Task> tasks = new();
@@ -96,18 +109,23 @@ namespace BADownloader
             }
         }
 
-        private async Task RetryManageDownloader( List<string> list )
+        /// <summary>
+        /// Instala os episódios do anime pela lista de URLs que falharam.
+        /// </summary>
+        /// <param name="Links">Lista com os links</param>
+        /// <returns>Task</returns>
+        private async Task RetryManageDownloader( List<string> Links )
         {
             List<Task> tasks = new();
 
-            for ( int i = 0; i < list.Count; )
+            for ( int i = 0; i < Links.Count; )
             {
                 for ( int j = 0; j < this.TaskDownload; j++ )
                 {
                     if ( i > this.Anime.LinkDownloads.Count )
                         break;
                     
-                    tasks.Add( DownloadAsync( await this.Anime.GetSourceLink( list.ElementAt(i) ), i ) );
+                    tasks.Add( DownloadAsync( await this.Anime.GetSourceLink( Links.ElementAt(i) ), i ) );
                     i++;
                 }
 
