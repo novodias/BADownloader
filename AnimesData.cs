@@ -50,16 +50,11 @@ namespace BADownloader
         {
             int one = filename.LastIndexOf('-') + 1;
 
-            int[] numbers = new int[4] 
-            {
-                one, one + 1, one + 2, one + 3
-            };
-
             string numberconcat = string.Empty;
 
             for (int i = 0; i < 4; i++)
             {
-                if (!int.TryParse(filename.AsSpan(numbers[i], 1), out int num))
+                if (!int.TryParse(filename.AsSpan(one + i, 1), out int num))
                 {
                     break;
                 }
