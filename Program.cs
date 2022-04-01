@@ -21,6 +21,9 @@ namespace BADownloader
         public static async Task MainAsync()
         {
             Console.Title = "BADownloader";
+            
+            if ( IsDebugMode )
+                System.Console.WriteLine("DebugMode = true");
 
             try
             {

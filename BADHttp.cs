@@ -20,14 +20,27 @@ namespace BADownloader
             var response = await Client.SendAsync( request );
             response.EnsureSuccessStatusCode();
 
+            if ( Program.IsDebugMode )
+            {
+                System.Console.WriteLine("Status Code: " + response.StatusCode);
+                System.Console.WriteLine("Is Success Status Code: " + response.IsSuccessStatusCode);
+            }
+
             return response;
         }
 
         public static async Task DownloadFileAsync( string downloadurl, FileStream file )
         {
             using var response = await Client.GetAsync( downloadurl, HttpCompletionOption.ResponseHeadersRead );
-            response.EnsureSuccessStatusCode();
 
+            if ( Program.IsDebugMode )
+            {
+                System.Console.WriteLine("Status Code: " + response.StatusCode);
+                System.Console.WriteLine("Is Success Status Code: " + response.IsSuccessStatusCode);
+            }
+
+            response.EnsureSuccessStatusCode();
+            
             long mb = 1000 * 1000;
             long? tamanho = response.Content.Headers.ContentLength / mb;
             Console.WriteLine( $"Tamanho: {tamanho} MB" );

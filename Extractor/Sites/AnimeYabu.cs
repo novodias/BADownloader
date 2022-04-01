@@ -188,7 +188,8 @@ namespace BADownloader.Extractor.Sites
                 else
                     Number = 0;
 
-                Console.WriteLine( Link );
+                if ( Program.IsDebugMode )
+                    Console.WriteLine( Link );
 
                 EpisodesDictionary.Add( Number, Link );
             }
