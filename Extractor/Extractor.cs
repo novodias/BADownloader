@@ -108,24 +108,27 @@ namespace BADownloader.Extractor
 
         public virtual void WriteDebug()
         {
-            Console.WriteLine($"Anime:{this.Name}");
+            string debug = $"[{nameof(WriteDebug)}] ";
+            Console.WriteLine( debug + $"Anime:{this.Name}");
             
             if ( this.Episodes is null ) 
                 throw new Exception("Episodes é null");
             
-            Console.Write($"Episodes: ");
+            Console.Write(debug + $"Episodes: ");
+            string final = string.Empty;
             foreach ( var num in this.Episodes )
             {
                 if ( num == this.Episodes[0] )
-                    Console.Write(num);
+                    final = num.ToString();
                 else
-                    Console.Write(", " + num);
+                    final += ", " + num.ToString();
             }
-            
-            Console.WriteLine("\nLast Episode: " + this.LastEpisode);
-            Console.WriteLine("URL:" + this.URL);
-            Console.WriteLine("Startcount: " + this.StartCount );
-            Console.WriteLine("Index: " + this.Index);
+            Console.Write(final + "\n");
+
+            Console.WriteLine( debug + "Last Episode: " + this.LastEpisode);
+            Console.WriteLine( debug + "URL:" + this.URL);
+            Console.WriteLine( debug + "Startcount: " + this.StartCount );
+            Console.WriteLine( debug + "Index: " + this.Index);
         }
 
         /// <summary>

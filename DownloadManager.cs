@@ -77,6 +77,8 @@ namespace BADownloader
             ConsoleKey key = Console.ReadKey().Key;
             bool bkey = key == ConsoleKey.Y | key == ConsoleKey.Enter;
 
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
             if ( bkey )
             {
                 Console.WriteLine("\nBaixando episódios que falharam..." + "\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
@@ -98,6 +100,8 @@ namespace BADownloader
                 {
                     if ( i > this.Anime.LinkDownloads.Count )
                         break;
+
+                    await Task.Delay(TimeSpan.FromSeconds(3));
 
                     var downloadlink = this.Anime.LinkDownloads.ElementAt(i).Value;
                     tasks.Add( DownloadAsync( await this.Anime.GetSourceLink( downloadlink ), i ) );
@@ -124,6 +128,8 @@ namespace BADownloader
                 {
                     if ( i > this.Anime.LinkDownloads.Count )
                         break;
+
+                    await Task.Delay(TimeSpan.FromSeconds(3));
                     
                     tasks.Add( DownloadAsync( await this.Anime.GetSourceLink( Links.ElementAt(i) ), i ) );
                     i++;

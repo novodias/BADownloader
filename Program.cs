@@ -10,6 +10,20 @@ namespace BADownloader
 
         public static bool IsDebugMode = false;
 
+        public static bool IsWindows7
+        {
+            get 
+            {
+                if ( !Environment.OSVersion.Platform.Equals(PlatformID.Win32NT) )
+                    return false;
+
+                if ( !Environment.OSVersion.Version.ToString().Equals("6.1") )
+                    return false;
+
+                return true;
+            }
+        }
+
         public static void Main(string[] args)
         {
             if ( args.Contains("--debug") )
@@ -27,9 +41,10 @@ namespace BADownloader
 
             try
             {
+                BADHttp.Client.Timeout = TimeSpan.FromMinutes(10);
                 IExtractor anime = await GetAnimeTypeAsync();
                 
-                if ( IsDebugMode )                
+                if ( IsDebugMode )
                     anime.WriteDebug();
 
                 int downloadnum = DownloadInput();
@@ -43,7 +58,10 @@ namespace BADownloader
             catch (Exception ex)
             {
                 Console.WriteLine("Algum erro ocorreu:");
-                AnsiConsole.WriteException(ex, ExceptionFormats.ShortenEverything);
+                if ( !IsWindows7 )
+                    AnsiConsole.WriteException(ex, ExceptionFormats.Default);
+                else
+                    Console.WriteLine( ex.ToString() );
             }
             finally
             {
@@ -64,19 +82,38 @@ namespace BADownloader
         {
             AnsiConsole.Write(new Markup("Exemplo de url: https://betteranime.net/anime/legendado/shingeki-no-kyojin\n"));
             AnsiConsole.Write(new Markup("Exemplo de url: https://animeyabu.com/anime/kimetsu-no-yaiba-yuukaku-hen-part-3\n"));
+
+            string url;
+            if ( !IsWindows7 )
+                url = AnsiConsole.Ask<string>("Insira a URL do anime:");
+            else 
+            {
+                Console.WriteLine("Insira a URL do Anime: ");
+                url = Console.ReadLine() ?? string.Empty;
+            }
             
-            string url = AnsiConsole.Ask<string>("Insira a URL do anime:");
-            bool IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => url.Contains(ctx) );
+            bool IsSiteSupported = AvailableSites.DictList.Keys.Any(ctx => url.Contains(ctx));
 
             while ( !IsSiteSupported )
             {
-                AnsiConsole.Write(new Markup("[red underline]URL inválido[/]\n"));
-                url = AnsiConsole.Ask<string>("Insira a URL do anime:");
+                if ( !IsWindows7 )
+                {
+                    AnsiConsole.Write(new Markup("[red underline]URL inválido[/]\n"));
+                    url = AnsiConsole.Ask<string>("Insira a URL do anime:");
+                }
+                else 
+                {
+                    Console.WriteLine("URL inválido\n");
+                    Console.WriteLine("Insira a URL do Anime: ");
+                    url = Console.ReadLine() ?? string.Empty;
+                }
+
                 IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => url.Contains(ctx) );
             }
 
-            HtmlWeb web = new();
-            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            var response = await BADHttp.SendAsync(url);
+            HtmlDocument doc = new();
+            doc.Load(await response.Content.ReadAsStreamAsync());
 
             var siteEnum = AvailableSites.GetSite( url );
 
@@ -90,16 +127,27 @@ namespace BADownloader
 
         static int DownloadInput()
         {
-            var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
-                .Title("Quantos downloads deseja ter? [green]1[/], [green]2[/], [green]3[/], [green]4[/] ou [green]5[/]\nRecomendado um PC bom suficiente para baixar 5/4/3/2 arquivos simultâneamente")
-                .PageSize(10)
-                .AddChoices(new [] 
-                {
-                    "1", "2", "3", "4", "5"
-                }));
+            string str;
+            if ( !IsWindows7 )
+                str = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("Quantos downloads deseja ter? [green]1[/], [green]2[/], [green]3[/], [green]4[/] ou [green]5[/]\nRecomendado um PC bom suficiente para baixar 5/4/3/2 arquivos simultâneamente")
+                    .PageSize(10)
+                    .AddChoices(new [] 
+                    {
+                        "1", "2", "3", "4", "5"
+                    })
+                );
+            else
+            {
+                Console.WriteLine("Quantos downloads deseja ter? 1, 2, 3, 4 ou 5\nRecomendado um PC bom suficiente para baixar 5/4/3/2 arquivos simultâneamente");
+                str = Console.ReadLine() ?? string.Empty;
+            }
 
             if (!int.TryParse(str, out int input))
-                throw new Exception("Isso não é um número!");
+            {
+                Console.WriteLine("Isso não é um número!");
+                return DownloadInput();
+            }
             else
             {
                 if (input < 1) input = 1;

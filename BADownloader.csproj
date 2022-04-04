@@ -6,7 +6,7 @@
     <ApplicationIcon>badicon_128x128.ico</ApplicationIcon>
     <ImplicitUsings>enable</ImplicitUsings>
     <PublishSingleFile>true</PublishSingleFile>
-    <SelfContained>true</SelfContained>
+    <SelfContained>false</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
     <Nullable>enable</Nullable>
     <PublishTrimmed>true</PublishTrimmed>

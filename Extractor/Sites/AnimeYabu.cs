@@ -30,42 +30,13 @@ namespace BADownloader.Extractor.Sites
             {
                 episodes[i] = Links.ElementAt(i).Key;
             }
+            
+            if ( !Program.IsWindows7 )
+                AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, Links.Last().Key)));
+            else
+                Console.WriteLine( string.Format("Anime: {0}\nNúmero de episódios: {1}\n", Name, Links.Last().Key) );
 
-            AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, Links.Last().Key)));
-
-            CheckAnimeFolder( Name, ref episodes, ref Links );
-
-            // if ( AnimesData.CheckUserFolder( Name ) )
-            // {
-            //     episodes = AnimesData.ExistingEpisodes( Name );
-            //     episodes = AnimesData.OtherEpisodes( episodes, Links.ElementAt(0).Key, Links.Count );
-
-            //     string StrEpisodes = string.Empty;
-            //     foreach ( var i in episodes )
-            //     {
-            //         if ( StrEpisodes.Equals( string.Empty ) )
-            //             StrEpisodes = $"Episódio(s) faltando: {i}";
-            //         else
-            //             StrEpisodes += $", {i}";
-            //     }
-            //     Console.WriteLine( StrEpisodes );
-
-            //     Dictionary<int, string> temporary = new();
-            //     for ( int i = 0; i < episodes.Length; i++ )
-            //     {
-            //         temporary.Add( episodes[i], Links.Single( ctx => ctx.Key == episodes[i]).Value );
-            //     }
-            //     Links = temporary;
-            // }
-            // else
-            // {
-            //     int index = 0;
-            //     foreach ( var key in Links.Keys )
-            //     {
-            //         episodes[index] = key;
-            //         index++;
-            //     }
-            // }
+            Extractor.CheckAnimeFolder( Name, ref episodes, ref Links );
 
             var Episodes = episodes;
             var LinkDownloads = Links;
@@ -97,25 +68,31 @@ namespace BADownloader.Extractor.Sites
                 { "x-page-speed", "1.13.35.2-0" },
             };
             
-            var response = await BADHttp.GetResponseMessageAsync( episodeURL, headers );
+            var response = await BADHttp.SendAsync( episodeURL, headers );
 
             var src = await response.Content.ReadAsStringAsync();
 
-            var HDindex = src.IndexOf( "type: \"video/mp4\",label: \"HD\",file: \"" ) + 37;
-            var SDindex = src.IndexOf( "type: \"video/mp4\",label: \"SD\",file: \"" ) + 37;
+            bool checkHD = src.Contains("type: \"video/mp4\",label: \"HD\"");
+            bool checkSD = src.Contains("type: \"video/mp4\",label: \"SD\"");
 
             string mp4link;
-            if ( Quality == "HD" )
+            if ( Quality == "HD" && checkHD )
             {
+                var HDindex = src.IndexOf( "type: \"video/mp4\",label: \"HD\",file: \"" ) + 37;
                 string HD = src[HDindex..];
                 var endlink = HD.IndexOf( "\"" );
                 mp4link = HD[0..endlink];
             }
-            else 
+            else if ( Quality == "SD" && checkSD )
             {
+                var SDindex = src.IndexOf( "type: \"video/mp4\",label: \"SD\",file: \"" ) + 37;
                 string SD = src[SDindex..];
                 var endlink = SD.IndexOf( "\"" );
                 mp4link = SD[0..endlink];
+            }
+            else
+            {
+                mp4link = src[(src.IndexOf("file: \"https://pitou.goyabu.com") + 7)..(src.IndexOf(".mp4\"") + 4)];
             }
 
             return mp4link;
@@ -150,13 +127,15 @@ namespace BADownloader.Extractor.Sites
                         tempLink = URL;
                     else
                         tempLink = URL + "/page/" + (page + 1);
-                    
+
+                    await Task.Delay(TimeSpan.FromSeconds(4));
+
                     HtmlDocument docTemp = await web.LoadFromWebAsync( tempLink );
                     var tempDictionary = AnimeYabu.GetAnimeYabuEpisodes( docTemp );
                     foreach ( var item in tempDictionary )
                     {
                         if ( !linkdownloads.TryAdd( item.Key, item.Value ) )
-                            System.Console.WriteLine("Não foi possível adicionar o seguinte episódio: " + item.Key + " | " + item.Value);
+                            System.Console.WriteLine("Não foi possível adicionar o seguinte episódio: " + item.Key + " | " + item.Value + " ( OVA? )");
                     }
                 }
 
@@ -201,15 +180,34 @@ namespace BADownloader.Extractor.Sites
 
         private static string QualityInput()
         {
-            var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
-                .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
-                .PageSize(5)
-                .AddChoices(new []
-                {
-                    "SD", "HD"
-                }));
+            string str;
+            if ( !Program.IsWindows7 )
+                return AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
+                    .PageSize(5)
+                    .AddChoices(new []
+                    {
+                        "SD", "HD"
+                    })
+                );
+            else
+            {
+                Console.WriteLine("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de ~100mb à ~1gbdependendo da qualidade\nVerifique se seu disco contém espaço suficiente!\n[1] SD\n[2] HD");
+                str = Console.ReadLine() ?? string.Empty;
+            }
 
-            return str;
+            switch (str)
+            {
+                case "1":
+                    return "SD";
+
+                case "2":
+                    return "HD";
+
+                default:
+                    System.Console.WriteLine("Opção inválida");
+                    return QualityInput();
+            }
         }
 
         // private static string GetGenres(HtmlDocument doc)

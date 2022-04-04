@@ -10,9 +10,8 @@ namespace BADownloader.Extractor.Sites
         private string Quality { get; }
         public BetterAnime( HtmlDocument Document , string Url ) : base()
         {
-            string name = Document.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/h2").InnerText ?? 
-                throw new Exception("Não foi encontrado o nome do anime, página não carregou ou o site caiu!");
-            
+            string name = Document.DocumentNode.SelectSingleNode("//*[@id='page-content']/main/div[1]/div/h2").InnerText;
+
             string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
             string pattern = "[" + chars + "]";
             Name = Regex.Replace( name, pattern, "" );
@@ -21,7 +20,10 @@ namespace BADownloader.Extractor.Sites
 
             var links = GetEpisodesURL( Document );
 
-            AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, links.Last().Key)));
+            if ( !Program.IsWindows7 )
+                AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, links.Last().Key)));
+            else
+                Console.WriteLine( string.Format("Anime: {0}\nNúmero de episódios: {1}\n", Name, links.Last().Key) );
 
             int[] episodes = new int[links.Count];
             for ( int i = 0; i < links.Count; i++ )
@@ -29,39 +31,7 @@ namespace BADownloader.Extractor.Sites
                 episodes[i] = links.ElementAt(i).Key;
             }
 
-            CheckAnimeFolder( Name, ref episodes, ref links );
-
-            // if ( AnimesData.CheckUserFolder( Name ) )
-            // {
-            //     episodes = AnimesData.ExistingEpisodes( Name );
-            //     episodes = AnimesData.OtherEpisodes( episodes, links.ElementAt(0).Key, links.Count );
-
-            //     string StrEpisodes = string.Empty;
-            //     foreach ( var i in episodes )
-            //     {
-            //         if ( StrEpisodes.Equals( string.Empty ) )
-            //             StrEpisodes = $"Episódio(s) faltando: {i}";
-            //         else
-            //             StrEpisodes += $", {i}";
-            //     }
-            //     Console.WriteLine( StrEpisodes );
-
-            //     Dictionary<int, string> temporary = new();
-            //     for ( int i = 0; i < episodes.Length; i++ )
-            //     {
-            //         temporary.Add( episodes[i], links.Single( ctx => ctx.Key == episodes[i] ).Value );
-            //     }
-            //     links = temporary;
-            // }
-            // else
-            // {
-            //     int index = 0;
-            //     foreach ( var key in links.Keys )
-            //     {
-            //         episodes[index] = key;
-            //         index++;
-            //     }
-            // }
+            Extractor.CheckAnimeFolder( Name, ref episodes, ref links );
 
             Episodes = episodes;
             LinkDownloads = links;
@@ -95,7 +65,7 @@ namespace BADownloader.Extractor.Sites
                 { "user-agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.51 Safari/537.36" }
             };
 
-            var response = await BADHttp.GetResponseMessageAsync( url, headers );
+            var response = await BADHttp.SendAsync( url, headers );
 
             var dl = JsonConvert.DeserializeObject<Props>( await response.Content.ReadAsStringAsync() ).PageProps.Anime.URLDownload;
 
@@ -166,28 +136,39 @@ namespace BADownloader.Extractor.Sites
 
         private static string QualityInput()
         {
-            var str = AnsiConsole.Prompt(new SelectionPrompt<string>()
+            string str;
+            if ( !Program.IsWindows7 )
+                str = AnsiConsole.Prompt(new SelectionPrompt<string>()
                 .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
                 .PageSize(5)
                 .AddChoices(new []
                 {
                     "SD", "HD", "FULL HD"
-                }));
+                })
+            );
+            else 
+            {
+                Console.WriteLine("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de ~100mb à ~1gb dependendo da qualidade\nVerifique se seu disco contém espaço suficiente! \n[1] SD\n[2] HD\n[3] FULL HD");
+                str = Console.ReadLine() ?? string.Empty;
+            }
 
             switch (str)
             {
                 case "SD":
-                return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
+                case "1":
+                    return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
 
                 case "HD":
-                return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[2]";
+                case "2":
+                    return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[2]";
 
                 case "FULL HD":
-                return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[3]";
+                case "3":
+                    return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[3]";
 
                 default:
-                    Console.WriteLine("??? selecionei o sd pra vc");
-                return "//*[@id='page-content']/div[2]/section/div[2]/div[1]/div/a[1]";
+                    Console.WriteLine("Opção inválida");
+                    return QualityInput();
             }
         }
     }

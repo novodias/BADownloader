@@ -5,7 +5,7 @@ namespace BADownloader.Extractor
         public readonly static Dictionary<string, SiteEnum> DictList = new()
         {
             { "betteranime", SiteEnum.BetterAnime },
-            { "animeyabu", SiteEnum.AnimeYabu }
+            { "animeyabu", SiteEnum.AnimeYabu },
         };
 
         public static SiteEnum GetSite( string websiteStr )
@@ -17,6 +17,6 @@ namespace BADownloader.Extractor
     public enum SiteEnum
     {
         BetterAnime,
-        AnimeYabu
+        AnimeYabu,
     }
 }

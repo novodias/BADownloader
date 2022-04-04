@@ -15,10 +15,20 @@ namespace BADownloader
         /// <exception cref="Exception"></exception>
         public static int EpisodeInput(int episodes_length, int[] episodes)
         {
-            var str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
+            string str;
+            if ( !Program.IsWindows7 )
+                str = AnsiConsole.Ask<string>("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
+            else
+            {
+                Console.WriteLine("Alguns animes começam no episódio 00\nDigite de qual episódio você quer começar baixar: ");
+                str = Console.ReadLine() ?? string.Empty;
+            }
 
             if (!int.TryParse(str, out int input))
-                throw new Exception("Isso não é um número!");
+            {
+                Console.WriteLine("Isso não é um número!");
+                return EpisodeInput(episodes_length, episodes);
+            }
             else
             {
                 if (!episodes.Any(x => x == input))
@@ -35,7 +45,7 @@ namespace BADownloader
             if ( !UserDir.Exists ) 
             {
                 if ( Program.IsDebugMode )
-                    System.Console.WriteLine( nameof(CheckUserFolder) + "\nUserDir.Exists: " + UserDir.Exists + "\nDiretórios criado." );
+                    System.Console.WriteLine( "[" + nameof(CheckUserFolder) + "] UserDir.Exists: " + UserDir.Exists + "\nDiretórios criado." );
                     
                 UserDir.Create();
                 UserDir.CreateSubdirectory(animename);
@@ -47,20 +57,20 @@ namespace BADownloader
                 if ( item.Name == animename )
                 {
                     if ( Program.IsDebugMode )
-                        System.Console.WriteLine( nameof(CheckUserFolder) + "\nAnime encontrado" );
+                        System.Console.WriteLine( "[" + nameof(CheckUserFolder) + "] Anime encontrado" );
 
                     var files = item.GetFiles();
                     if ( files is not null )
                     {
                         if ( Program.IsDebugMode )
-                            System.Console.WriteLine( nameof(CheckUserFolder) + "\nEpisódios baixados encontrados" );
+                            System.Console.WriteLine( "[" + nameof(CheckUserFolder) + "] Episódios baixados encontrados" );
                         return true;
                     }
                 }
             }
 
             if ( Program.IsDebugMode )
-                System.Console.WriteLine( nameof(CheckUserFolder) + "\nUserDir.Exists: " + UserDir.Exists + "\nDiretório do anime criado." );
+                System.Console.WriteLine( "[" + nameof(CheckUserFolder) + "] UserDir.Exists: " + UserDir.Exists + "\nDiretório do anime criado." );
 
             UserDir.CreateSubdirectory(animename);
             return false;
