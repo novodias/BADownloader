@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>BADownloaderApp</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TargetName>BADownloaderApp</TargetName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.43" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BADownloader\BADownloader.csproj" />
+    <ProjectReference Include="..\MinimalLog\MinimalLog.csproj" />
+  </ItemGroup>
+
+</Project>

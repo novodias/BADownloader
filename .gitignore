@@ -1,5 +1,6 @@
-bin
-BADownloaderX64
-BADownloaderLinux
-obj
+#
+*/obj
+*/bin
 .vscode
+icon.png
+start-bad.sh

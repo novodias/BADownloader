@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace BADownloader.Extractor.Sites
+namespace BADownloader.Sites
 {
     public struct NextData
     {

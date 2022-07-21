@@ -1,49 +1,28 @@
 using System.Text.RegularExpressions;
 using HtmlAgilityPack;
-using Spectre.Console;
 
-namespace BADownloader.Extractor.Sites
+namespace BADownloader.Sites
 {
     public class AnimeYabu : Extractor
     {
-        private string Quality { get; }
-
-        private AnimeYabu( string name, Dictionary<int, string> links, int[] episodes, string url, int startcount, string quality ) : base( name, links, episodes, url, startcount )
+        private AnimeYabu( string name, AnimeCollection animeCollection, string url, int total ) : base( name, animeCollection, url )
         {
-            this.Quality = quality;
+            this.Total = total;
         }
 
-        public static async Task<AnimeYabu> InitializeExtractorAsync( HtmlDocument Document, string Url )
+        public static async Task<AnimeYabu> InitializeExtractorAsync(HtmlDocument document, string url)
         {
-            string name = Document.DocumentNode.SelectSingleNode("//div[contains(@class, 'anime-title')]").InnerText;
-            string chars = Regex.Escape(@"<>:" + "\"" + "/|?*");
-            string pattern = "[" + chars + "]";
-            string Name = Regex.Replace(name, pattern, "");
+            var name = document.DocumentNode.SelectSingleNode("//div[contains(@class, 'anime-title')]").InnerText;
 
-            string URL = Url;
-
-            Dictionary<int, string> Links = await GetEpisodesURL( Document, URL );
-            int AnimeLength = Links.Count;
-
-            int[] episodes = new int[Links.Count];
-            for (int i = 0; i < Links.Count; i++)
-            {
-                episodes[i] = Links.ElementAt(i).Key;
-            }
+            string baseURL = url;
             
-            if ( !Program.IsWindows7 )
-                AnsiConsole.Write(new Markup(string.Format("Anime: [green bold]{0}[/]\nNúmero de episódios: [green bold]{1}[/]\n", Name, Links.Last().Key)));
-            else
-                Console.WriteLine( string.Format("Anime: {0}\nNúmero de episódios: {1}\n", Name, Links.Last().Key) );
+            var animeCollection = await GetEpisodesURL(document, baseURL, name);
+            var total = animeCollection.Count;
+            animeCollection = Extractor.SearchInAnimeFolder(name, animeCollection);
 
-            Extractor.CheckAnimeFolder( Name, ref episodes, ref Links );
+            // var quality = AnimeYabu.QualityInput();
 
-            var Episodes = episodes;
-            var LinkDownloads = Links;
-            var StartCount = AnimesData.EpisodeInput( AnimeLength, Episodes );
-            var Quality = AnimeYabu.QualityInput();
-
-            return new AnimeYabu( Name, LinkDownloads, Episodes, URL, StartCount, Quality );
+            return new AnimeYabu( name, animeCollection, baseURL, total);
         }
 
         public override async Task<string> GetSourceLink( string episodeURL )
@@ -76,14 +55,14 @@ namespace BADownloader.Extractor.Sites
             bool checkSD = src.Contains("type: \"video/mp4\",label: \"SD\"");
 
             string mp4link;
-            if ( Quality == "HD" && checkHD )
+            if ( Quality.Equals(Quality.HD) && checkHD )
             {
                 var HDindex = src.IndexOf( "type: \"video/mp4\",label: \"HD\",file: \"" ) + 37;
                 string HD = src[HDindex..];
                 var endlink = HD.IndexOf( "\"" );
                 mp4link = HD[0..endlink];
             }
-            else if ( Quality == "SD" && checkSD )
+            else if ( Quality.Equals(Quality.SD) && checkSD )
             {
                 var SDindex = src.IndexOf( "type: \"video/mp4\",label: \"SD\",file: \"" ) + 37;
                 string SD = src[SDindex..];
@@ -98,13 +77,13 @@ namespace BADownloader.Extractor.Sites
             return mp4link;
         }
 
-        private async static Task<Dictionary<int, string>> GetEpisodesURL( HtmlDocument doc, string URL )
+        private async static Task<AnimeCollection> GetEpisodesURL( HtmlDocument doc, string url, string name )
         {
             bool IsPaged = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'naco')]").HasChildNodes;
 
             if ( !IsPaged )
             {
-                return AnimeYabu.GetAnimeYabuEpisodes( doc );
+                return AnimeYabu.GetAnimeYabuEpisodes( doc, name );
             }
             else
             {
@@ -119,90 +98,81 @@ namespace BADownloader.Extractor.Sites
                 }
 
                 HtmlWeb web = new();
-                Dictionary<int, string> linkdownloads = new();
+                AnimeCollection animeCollection = new();
                 string tempLink;
                 for ( int page = 0; page < tempPages; page++ )
                 {
                     if ( page == 0 )
-                        tempLink = URL;
+                        tempLink = url;
                     else
-                        tempLink = URL + "/page/" + (page + 1);
+                        tempLink = url + "/page/" + (page + 1);
 
                     await Task.Delay(TimeSpan.FromSeconds(4));
 
                     HtmlDocument docTemp = await web.LoadFromWebAsync( tempLink );
-                    var tempDictionary = AnimeYabu.GetAnimeYabuEpisodes( docTemp );
-                    foreach ( var item in tempDictionary )
+                    var tempDictionary = AnimeYabu.GetAnimeYabuEpisodes( docTemp, name );
+                    foreach ( var item in tempDictionary.InfoCollection )
                     {
-                        if ( !linkdownloads.TryAdd( item.Key, item.Value ) )
-                            System.Console.WriteLine("Não foi possível adicionar o seguinte episódio: " + item.Key + " | " + item.Value + " ( OVA? )");
+                        if ( !animeCollection.TryAdd( item ) )
+                            Console.WriteLine("Não foi possível adicionar o seguinte episódio: " + item.Name + " ( OVA? )");
                     }
                 }
 
-                return linkdownloads;
+                return animeCollection;
             }
         }
 
-        private static Dictionary<int, string> GetAnimeYabuEpisodes( HtmlDocument doc )
+        private static AnimeCollection GetAnimeYabuEpisodes( HtmlDocument doc, string name )
         {
             var ChildsNodes = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'loop-content phpvibe-video-list miau')]").Descendants();
 
             var VideosNodes = ChildsNodes.Where(node => node.HasClass("video"));
 
-            Dictionary<int, string> EpisodesDictionary = new();
+            AnimeCollection animeDictionary = new();
             foreach (var node in VideosNodes)
             {
                 var ClipLink = node.Descendants().Single(node => node.HasClass("video-thumb")).FirstChild;
 
-                string Link = ClipLink.GetAttributeValue( "href", "" );
+                string link = ClipLink.GetAttributeValue( "href", "" );
                 string strNumber = ClipLink.GetAttributeValue( "title", "" );
 
-                int Number;
+                int number;
                 if ( strNumber.Contains( "Epis", StringComparison.OrdinalIgnoreCase ) )
-                    Number = int.Parse(
+                    number = int.Parse(
                             Regex.Replace( strNumber[strNumber.IndexOf("Epis")..strNumber.Length], "[^0-9.]", "" )
                     );
                 else if ( strNumber.Contains( "OVA", StringComparison.OrdinalIgnoreCase ) )
-                    Number = int.Parse(
+                    number = int.Parse(
                             Regex.Replace( strNumber[strNumber.IndexOf("OVA")..strNumber.Length], "[^0-9.]", "" )
                     );
                 else
-                    Number = 0;
+                    number = 0;
 
-                if ( Program.IsDebugMode )
-                    Console.WriteLine( Link );
+                var info = new AnimeInfo()
+                {
+                    Name = $"{name}-{number}",
+                    Number = number,
+                    URLDownload = link
+                };
 
-                EpisodesDictionary.Add( Number, Link );
+                animeDictionary.TryAdd( info );
             }
 
-            return EpisodesDictionary;
+            return animeDictionary;
         }
 
-        private static string QualityInput()
+        private static Quality QualityInput()
         {
-            string str;
-            if ( !Program.IsWindows7 )
-                return AnsiConsole.Prompt(new SelectionPrompt<string>()
-                    .Title("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de [green]~100mb[/] à [yellow]~1gb[/] dependendo da qualidade\n[yellow underline]Verifique se seu disco contém espaço suficiente![/]")
-                    .PageSize(5)
-                    .AddChoices(new []
-                    {
-                        "SD", "HD"
-                    })
-                );
-            else
-            {
-                Console.WriteLine("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de ~100mb à ~1gbdependendo da qualidade\nVerifique se seu disco contém espaço suficiente!\n[1] SD\n[2] HD");
-                str = Console.ReadLine() ?? string.Empty;
-            }
+            Console.WriteLine("\nSelecione a qualidade de vídeo preferida.\nOBS: Nem todas as qualidades estarão disponíveis dependendo do anime.\nCada episódio pode variar de ~100mb à ~1gbdependendo da qualidade\nVerifique se seu disco contém espaço suficiente!\n[1] SD\n[2] HD");
+            string str = Console.ReadLine() ?? string.Empty;
 
             switch (str)
             {
                 case "1":
-                    return "SD";
+                    return Quality.SD;
 
                 case "2":
-                    return "HD";
+                    return Quality.HD;
 
                 default:
                     System.Console.WriteLine("Opção inválida");
