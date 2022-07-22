@@ -29,7 +29,7 @@ namespace BADownloader.Sites
                 return node.SelectSingleNode(xpath).GetAttributeValue("href", "");
             }
 
-            if (this.Quality is Quality.NULL)
+            if (this.Quality == Quality.NULL || this.Quality == Quality.AUTO)
             {
                 for (int i = OptionsQuality.Count - 1; i >= 0 ; i--)
                 {

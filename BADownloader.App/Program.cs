@@ -169,13 +169,13 @@ namespace BADownloader.App
             string message = "Selecione a qualidade de vídeo preferida." +
             "\nOBS: Nem todas as qualidades estarão disponíveis dependendo do [yellow]anime; e do [yellow]site;." +
             "\nCada episódio pode variar de [green]~100mb; à [red]~1gb; dependendo da qualidade" +
-            "\nVerifique se seu disco contém espaço suficiente! \n[yellow]1;. SD\n[yellow]2;. HD\n[yellow]3;. FULL HD";
+            "\nVerifique se seu disco contém espaço suficiente! \n[yellow]1;. SD\n[yellow]2;. HD\n[yellow]3;. FULL HD\n[red]4;. AUTOMÁTICO (PRIORIZA QUALIDADE)";
 
             BADConsole.WriteLine(message);
             char digitChar = Console.ReadKey(true).KeyChar;
             int digit = int.Parse(digitChar.ToString());
 
-            while (!Char.IsDigit(digitChar) && !(digit > 0 && digit < 4))
+            while (!Char.IsDigit(digitChar) && !(digit > 0 && digit < 5))
             {
                 digitChar = Console.ReadKey(true).KeyChar;
                 digit = int.Parse(digitChar.ToString());
@@ -184,7 +184,8 @@ namespace BADownloader.App
             BADConsole.WriteLine(
                 (Quality)digit == Quality.SD ? "Qualidade [yellow]SD; selecionado.\n" : 
                 (Quality)digit == Quality.HD ? "Qualidade [darkblue]HD; selecionado.\n" : 
-                "Qualidade [green]FULL HD; selecionado.\n"
+                (Quality)digit == Quality.FHD ? "Qualidade [green]FULL HD; selecionado.\n" :
+                "Qualidade [green]mais alta; será [yellow]priorizada;."
             );
 
             return digit switch
@@ -192,6 +193,7 @@ namespace BADownloader.App
                 1 => Quality.SD,
                 2 => Quality.HD,
                 3 => Quality.FHD,
+                4 => Quality.AUTO,
                 _ => throw new Exception("Opção inválida")
             };
         }

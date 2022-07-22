@@ -215,6 +215,7 @@ namespace BADownloader
         NULL = 0,
         SD = 1,
         HD = 2,
-        FHD = 3
+        FHD = 3,
+        AUTO = 4,
     }
 }
