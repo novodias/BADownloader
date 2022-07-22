@@ -37,16 +37,16 @@ namespace BADownloader.App
                     shouldWrite = false;
                     colorString += ch;
                 }
-                else if ( !shouldWrite && !ch.Equals(']') )
-                    colorString += ch;
-                else if (ch.Equals(';'))
-                    Console.ResetColor();
                 else if (ch.Equals(']'))
                 {
                     shouldWrite = true;
                     Console.ForegroundColor = _searchColor[colorString + ']'];
                     colorString = string.Empty;
                 }
+                else if ( !shouldWrite && !ch.Equals(']') )
+                    colorString += ch;
+                else if (ch.Equals(';'))
+                    Console.ResetColor();
                 else if ( shouldWrite )
                     Console.Write(ch);
             }

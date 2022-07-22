@@ -10,23 +10,14 @@ namespace BADownloader.App
         public static void Main(string[] args)
         {
             bool writable = false;
-            Logging[]? logtypes = null;
+            int loglevel = -1;
 
             if ( args.Contains("--verbose") )
-            {
-                logtypes = new Logging[]
-                {
-                    Logging.Debug,
-                    Logging.Warning,
-                    Logging.Information,
-                    Logging.Error
-                };
-            }
-            
+                loglevel = 4;
             if ( args.Contains("--savelog") )
                 writable = true;
 
-            MinimalLogger.SetUpLogger(logtypes, writable);
+            MinimalLogger.SetUpLogger(loglevel, writable);
             string time = "############ " + DateTime.Now.TimeOfDay.ToString() + " ############";
             MinimalLogger.Log(Logging.Debug, id, time);
 
@@ -34,6 +25,7 @@ namespace BADownloader.App
         }
 
         static readonly string id = "BADownloader";
+        delegate Task<Extractor> GetExtractorAsync(HtmlDocument document, string url);
 
         public static async Task MainAsync()
         {
@@ -47,7 +39,7 @@ namespace BADownloader.App
                 BADHttp.Client.Timeout = TimeSpan.FromMinutes(5);
                 IExtractor extractor = await InitializeExtractor();
 
-                var episodes = extractor.AnimeCollection.EpisodesCollection;
+                var episodes = extractor.ACollection.EpisodesCollection;
                 var episodesString = new StringBuilder(episodes.Count == extractor.Total ? "Episódios: " : "Episódios restantes: ");
 
                 foreach (var num in episodes)
@@ -62,7 +54,7 @@ namespace BADownloader.App
                 BADConsole.WriteLine($"Total de episódios do anime: [darkblue]{extractor.Total};");
                 BADConsole.WriteLine(episodesString.ToString() + "\n");
 
-                int start = StartInput(extractor.AnimeCollection.EpisodesCollection);
+                int start = StartInput(extractor.ACollection.EpisodesCollection);
                 extractor.TrySetStart(start);
 
                 Quality quality = QualityInput();
@@ -70,18 +62,9 @@ namespace BADownloader.App
 
                 int downloadnum = DownloadInput();
 
-                // extractor.WriteDebug();
-
-                // foreach (var item in extractor.AnimeDict.AnimeInfoValues)
-                // {
-                //     Console.WriteLine(item.Name);
-                // }
-
-                DownloadManager Manage = new( extractor, downloadnum );
-
-                await Manage.StartDownloadAsync();
-
-                Manage.Dispose();
+                Downloader downloader = new( extractor, downloadnum );
+                await downloader.StartAsync();
+                // downloader.Dispose();
             }
             catch (Exception ex)
             {
@@ -111,8 +94,8 @@ namespace BADownloader.App
             string url;
             Console.WriteLine("Insira a URL do Anime: ");
             url = Console.ReadLine() ?? string.Empty;
-            
-            bool IsSiteSupported = AvailableSites.DictList.Keys.Any(ctx => url.Contains(ctx));
+
+            bool IsSiteSupported = AvailableSites.Contains(url);
 
             while ( !IsSiteSupported )
             {
@@ -120,19 +103,22 @@ namespace BADownloader.App
                 Console.WriteLine("Insira a URL do Anime: ");
                 url = Console.ReadLine() ?? string.Empty;
 
-                IsSiteSupported = AvailableSites.DictList.Keys.Any( ctx => url.Contains(ctx) );
+                IsSiteSupported = AvailableSites.Contains(url);
             }
 
             var response = await BADHttp.SendAsync(url);
             HtmlDocument doc = new();
             doc.Load(await response.Content.ReadAsStreamAsync());
 
+            GetExtractorAsync betterAnime = new(BetterAnime.InitializeExtractorAsync);
+            GetExtractorAsync animeYabu = new(AnimeYabu.InitializeExtractorAsync);
+
             var website = AvailableSites.GetSite( url );
 
             return website switch
             {
-                Website.BetterAnime => BetterAnime.InitializeExtractor(doc, url),
-                Website.AnimeYabu => await AnimeYabu.InitializeExtractorAsync(doc, url),
+                Website.BetterAnime => await betterAnime(doc, url),
+                Website.AnimeYabu => await animeYabu(doc, url),
                 _ => throw new Exception("Algo errado ocorreu")
             };
         }

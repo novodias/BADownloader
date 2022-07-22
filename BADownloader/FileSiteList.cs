@@ -1,18 +1,16 @@
 namespace BADownloader
 {
-    public class AvailableSites
+    public static class AvailableSites
     {
-        public readonly static Dictionary<string, Website> DictList = new()
+        private readonly static Dictionary<string, Website> WebsiteDict = new()
         {
-            { "https://www.betteranime.net", Website.BetterAnime },
-            { "https://betteranime.net", Website.BetterAnime },
+            { "https://betteranime.net/", Website.BetterAnime },
             { "animeyabu", Website.AnimeYabu },
         };
 
-        public static Website GetSite( string websiteStr )
-        {
-            return DictList.Single( ctx => websiteStr.StartsWith(ctx.Key) ).Value;
-        }
+        public static Website GetSite(string websiteStr) => WebsiteDict.Single( ctx => websiteStr.StartsWith(ctx.Key) ).Value;
+
+        public static bool Contains(string website) => WebsiteDict.Keys.Any( ctx => website.Contains(ctx) );
 
     }
 

@@ -5,12 +5,12 @@ namespace BADownloader.Sites
 {
     public class AnimeYabu : Extractor
     {
-        private AnimeYabu( string name, AnimeCollection animeCollection, string url, int total ) : base( name, animeCollection, url )
+        private AnimeYabu( string name, ACollection animeCollection, string url, int total ) : base( name, animeCollection, url )
         {
             this.Total = total;
         }
 
-        public static async Task<AnimeYabu> InitializeExtractorAsync(HtmlDocument document, string url)
+        public static async Task<Extractor> InitializeExtractorAsync(HtmlDocument document, string url)
         {
             var name = document.DocumentNode.SelectSingleNode("//div[contains(@class, 'anime-title')]").InnerText;
 
@@ -77,7 +77,7 @@ namespace BADownloader.Sites
             return mp4link;
         }
 
-        private async static Task<AnimeCollection> GetEpisodesURL( HtmlDocument doc, string url, string name )
+        private async static Task<ACollection> GetEpisodesURL( HtmlDocument doc, string url, string name )
         {
             bool IsPaged = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'naco')]").HasChildNodes;
 
@@ -98,7 +98,7 @@ namespace BADownloader.Sites
                 }
 
                 HtmlWeb web = new();
-                AnimeCollection animeCollection = new();
+                ACollection animeCollection = new();
                 string tempLink;
                 for ( int page = 0; page < tempPages; page++ )
                 {
@@ -122,13 +122,13 @@ namespace BADownloader.Sites
             }
         }
 
-        private static AnimeCollection GetAnimeYabuEpisodes( HtmlDocument doc, string name )
+        private static ACollection GetAnimeYabuEpisodes( HtmlDocument doc, string name )
         {
             var ChildsNodes = doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'loop-content phpvibe-video-list miau')]").Descendants();
 
             var VideosNodes = ChildsNodes.Where(node => node.HasClass("video"));
 
-            AnimeCollection animeDictionary = new();
+            ACollection animeDictionary = new();
             foreach (var node in VideosNodes)
             {
                 var ClipLink = node.Descendants().Single(node => node.HasClass("video-thumb")).FirstChild;

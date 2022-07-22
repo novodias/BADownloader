@@ -8,8 +8,8 @@ namespace BADownloader.App
         public static ProgressInfo Report(ProgressInfo info, long value)
         {
             var now = DateTime.Now.TimeOfDay;
-            if ( info.Time is null ) info.SetTime(now, _interval);
-            if ( now <= info.Time ) return info;
+            if ( info.Timer is null ) info.SetTimer(now, _interval);
+            if ( now <= info.Timer ) return info;
             
             var percentage = (int)Math.Round((double)(100 * value) / info.Length);
             if ( percentage > 100 )
@@ -30,14 +30,7 @@ namespace BADownloader.App
             lock (_progressLock)
             {
                 if ( info.Position != consolePosition )
-                {
-                    // var offsetX = info.Position.x - consolePosition.Left;
-                    // var offsetY = info.Position.y - consolePosition.Top;
-
-                    // Console.CursorLeft += Math.Abs(offsetX);
-                    // Console.CursorTop += Math.Abs(offsetY);
                     Console.SetCursorPosition(info.Position.x, info.Position.y);
-                }
 
                 if ( info.Text is not null )
                     Console.Write(info.Text + " ");
@@ -87,7 +80,7 @@ namespace BADownloader.App
     public struct ProgressInfo
     {
         public readonly TimeSpan TimeComparison = DateTime.Now.TimeOfDay;
-        public TimeSpan? Time { get; private set; } = null;
+        public TimeSpan? Timer { get; private set; } = null;
         public readonly string? Text { get; init; } = null;
         public (int x, int y) Position { get; init; }
         public readonly long Length { get; init; }
@@ -105,6 +98,6 @@ namespace BADownloader.App
             this.Text = text;
         }
 
-        public void SetTime(TimeSpan now, TimeSpan interval) => this.Time = now + interval;
+        public void SetTimer(TimeSpan now, TimeSpan interval) => this.Timer = now + interval;
     }
 }

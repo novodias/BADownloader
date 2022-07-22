@@ -20,7 +20,7 @@ namespace BADownloader.Sites
             var animeCollection = GetEpisodesURL( document, Name );
             this.Total = animeCollection.Count;
 
-            this.AnimeCollection = Extractor.SearchInAnimeFolder( Name, animeCollection );
+            this.ACollection = Extractor.SearchInAnimeFolder( Name, animeCollection );
         }
 
         private string GetOptionQuality(HtmlNode node)
@@ -43,6 +43,23 @@ namespace BADownloader.Sites
             return GetLink(this.OptionsQuality[this.Quality]);
         }
 
+        public static Task<Extractor> InitializeExtractorAsync(HtmlDocument document, string url) 
+        {
+            var tcs = new TaskCompletionSource<Extractor>();
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    var result = new BetterAnime(document, url);
+                    tcs.SetResult(result);
+                }
+                catch (Exception e) {
+                    tcs.SetException(e); 
+                }
+            });
+
+            return tcs.Task;
+        }
         public static BetterAnime InitializeExtractor(HtmlDocument document, string url) => new(document, url);
 
         public override async Task<string> GetSourceLink( string episodeURL )
@@ -114,7 +131,7 @@ namespace BADownloader.Sites
         //     return strgenres;
         // }
 
-        private static AnimeCollection GetEpisodesURL(HtmlDocument doc, string name)
+        private static ACollection GetEpisodesURL(HtmlDocument doc, string name)
         {
             var episodeshtml = doc.DocumentNode.SelectSingleNode("//*[@id='episodesList']");
 
@@ -131,7 +148,7 @@ namespace BADownloader.Sites
                 }
             }
 
-            AnimeCollection AnimeCollection = new();
+            ACollection ACollection = new();
             
             foreach (var url in collectionURL)
             {
@@ -143,10 +160,10 @@ namespace BADownloader.Sites
                     URLDownload = url
                 };
 
-                AnimeCollection.TryAdd(info);
+                ACollection.TryAdd(info);
             }
 
-            return AnimeCollection;
+            return ACollection;
         }
 
         // private static string QualityInput()

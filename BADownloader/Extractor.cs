@@ -6,7 +6,7 @@ namespace BADownloader
     public class Extractor : IExtractor
     {
         private string? _name;
-        private AnimeCollection? _animeCollection;
+        private ACollection? _aCollection;
         private string? _url;
 
         public string Name 
@@ -27,15 +27,15 @@ namespace BADownloader
             }
         }
 
-        public AnimeCollection AnimeCollection 
+        public ACollection ACollection 
         { 
             get 
             {
-                if ( this._animeCollection is not null )
-                    return _animeCollection;
+                if ( this._aCollection is not null )
+                    return _aCollection;
                 throw new Exception("AnimeDict null");
             }
-            set { _animeCollection = value; }
+            set { _aCollection = value; }
         }
 
         public string BaseURL 
@@ -58,7 +58,7 @@ namespace BADownloader
         {
             get 
             {
-                if ( this.AnimeCollection.TryGetIndexFromEpisodeNumber(Start, out int index) )
+                if ( this.ACollection.TryGetIndexFromEpisodeNumber(Start, out int index) )
                     return index;
 
                 // Retorna 0.
@@ -81,16 +81,16 @@ namespace BADownloader
         /// <param name="links">(Key) Número do episódio e (Value) Link do episódio</param>
         /// <param name="url">URL do anime</param>
         /// <param name="startcount">Episódio que usuário escolheu</param>
-        internal Extractor(string name, AnimeCollection animeCollection, string url)
+        internal Extractor(string name, ACollection ACollection, string url)
         {
             this.Name = name;
-            this.AnimeCollection = animeCollection;
+            this.ACollection = ACollection;
             this.BaseURL = url;
         }
 
         public bool TrySetStart(int number)
         {
-            if ( this.AnimeCollection.TryGetAnimeInfoWithEpisodeNumber(number, out var info) )
+            if ( this.ACollection.TryGetAnimeInfoWithEpisodeNumber(number, out var info) )
             {
                 this.Start = info.Number;
                 return true;
@@ -107,14 +107,14 @@ namespace BADownloader
         {
             // Log(Logging.Information, $"Anime: {this.Name}");
 
-            // if ( this.AnimeCollection is null )
+            // if ( this.ACollection is null )
             // {
             //     Log(Logging.Error, "Episodes é null");
             //     throw new ArgumentNullException("AnimeDict");
             // }
 
             // var episodesCollection = new StringBuilder("Episodes: ")
-            //     .AppendJoin(", ", AnimeCollection.EpisodesCollection)
+            //     .AppendJoin(", ", ACollection.EpisodesCollection)
             //     .ToString();
 
             // Log(Logging.Information, episodesCollection);
@@ -139,23 +139,23 @@ namespace BADownloader
         /// <param name="episodes">Array com os episódios</param>
         /// <param name="animedict">(Key) Número do episódio e (Value) Link do episódio</param>
         /// <returns>AnimeDictionary com dicionário dos animes baixados</returns>
-        protected static AnimeCollection SearchInAnimeFolder(string name, AnimeCollection animeCollection)
+        protected static ACollection SearchInAnimeFolder(string name, ACollection ACollection)
         {
             // Checa a pasta do anime e o conteúdo dentro
             if (AnimesData.CheckUserFolder(name))
             {
                 // Pega os episódios da pasta e então remove do array os episódios que já estão baixados
-                var remainingEpisodes = GetRemainingEpisodes(name, animeCollection);
+                var remainingEpisodes = GetRemainingEpisodes(name, ACollection);
 
-                animeCollection.SetCollection(animeCollection.InfoCollection
+                ACollection.SetCollection(ACollection.InfoCollection
                     .Where(ctx => remainingEpisodes.Any(num => num == ctx.Number))
                     .ToList());
             }
 
-            return animeCollection;
+            return ACollection;
         }
 
-        private static IEnumerable<int> GetRemainingEpisodes(string name, AnimeCollection animedict)
+        private static IEnumerable<int> GetRemainingEpisodes(string name, ACollection animedict)
         {
             int firstEpisodeNumber = animedict.First().Number;
             int count = animedict.Count;

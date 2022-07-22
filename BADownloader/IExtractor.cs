@@ -3,7 +3,7 @@ namespace BADownloader
     public interface IExtractor
     {
         string Name { get; }
-        AnimeCollection AnimeCollection { get; }
+        ACollection ACollection { get; }
         string BaseURL { get; }
         int Total { get; }
         int Start { get; }

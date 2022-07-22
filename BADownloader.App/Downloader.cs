@@ -1,24 +1,23 @@
+using System.Runtime.InteropServices;
 using MinimalLog;
 
 namespace BADownloader.App
 {
-    public class DownloadManager
+    public class Downloader
     {
+        private readonly bool _isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private readonly IExtractor _anime;
         private readonly int _taskDownload;
-        private readonly List<string> _urlsCollectionFailed;
-        public DownloadManager(IExtractor anime, int amount)
+        private readonly ACollection _collectionFailed;
+        public Downloader(IExtractor anime, int amount)
         {
             this._anime = anime;
             this._taskDownload = amount;
-            this._urlsCollectionFailed = new();
+            this._collectionFailed = new();
         }
 
         private async Task DownloadAsync(string url, int i, (int x, int y) position)
         {
-            var info = this._anime.AnimeCollection.GetAnimeInfo(i);
-            int animeNumber = info.Number;
-
             /*
             string epURL = string.Empty;
             if ( animeindex < 10 )
@@ -27,16 +26,20 @@ namespace BADownloader.App
             // string failedURL = info.URLDownload;
             */
 
-            var file = File.OpenWrite(
-                Path.Combine(AnimesData.Directory, $"{this._anime.Name}/{info.Name}")
-            );
+            var info = this._anime.ACollection.GetAnimeInfo(i);
+            int animeNumber = info.Number;
+
+            string animefile = _isWindows ? $"{this._anime.Name}/{info.Name}.mp4" : $"{this._anime.Name}/{info.Name}";
+            var path = Path.Combine(AnimesData.Directory, animefile);
+
+            var fileinfo = new FileInfo(path);
+
+            using var file = fileinfo.Create();
 
             try
             {
-                var lastNumber = this._anime.AnimeCollection.Last().Number;
+                var lastNumber = this._anime.ACollection.Last().Number;
                 string message = $"Baixando: [{animeNumber}/{lastNumber}]";
-
-                // var file = File.OpenWrite($"Animes/{this.Anime.Name}/{info.Name}.mp4");
 
                 using var response = await BADHttp.DownloadFileAsync(url);
                 using var source = await response.Content.ReadAsStreamAsync();
@@ -50,21 +53,21 @@ namespace BADownloader.App
                 }
                 else
                 {
-                    BADConsole.WriteLine("Progresso do download não está disponível.");
+                    BADConsole.Write("Progresso do download não está disponível.");
                     await source.CopyToAsync(file);
                 }
 
-                // if ( this.URLsFailed.Contains( failedURL ) )
-                //     this.URLsFailed.Remove( failedURL );
+                if ( this._collectionFailed.Contains(info) )
+                    this._collectionFailed.Remove(info);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Download do episódio [{animeNumber}] falhou! {ex.Message}");
-                MinimalLogger.Log<DownloadManager>(Logging.Error, ex.ToString());
-                File.Delete(file.Name);
+                MinimalLogger.Log<Downloader>(Logging.Error, ex.ToString());
+                fileinfo.Delete();
 
-                // if ( !this.URLsFailed.Contains( failedURL ) )
-                //     this.URLsFailed.Add( failedURL );
+                if ( !this._collectionFailed.Contains(info) )
+                    this._collectionFailed.TryAdd(info);
             }
         }
 
@@ -72,22 +75,22 @@ namespace BADownloader.App
         /// Inicia o ManageDownloader.
         /// </summary>
         /// <returns>Task</returns>
-        public async Task StartDownloadAsync()
+        public async Task StartAsync()
         {
-            await this.ManageDownloader();
+            await this.DownloadAnime();
 
             Console.WriteLine($"\nDownloads concluídos!");
 
-            await this.RetryDownload();
+            await this.Retry();
         }
 
         /// <summary>
         /// Verifica se há URLsFailed, se sim, pergunta ao usuário se deseja baixar os episódios restantes e então os baixa.
         /// </summary>
         /// <returns>Task</returns>
-        private async Task RetryDownload()
+        private async Task Retry()
         {
-            if ( !( this._urlsCollectionFailed.Count > 0 ) )
+            if ( !( this._collectionFailed.Count > 0 ) )
                 return;
 
             BADConsole.Write("Deseja baixar os episódios que falharam? ([green]Y;/[red]n;) ");
@@ -100,6 +103,7 @@ namespace BADownloader.App
             {
                 Console.WriteLine("\nBaixando episódios que falharam..." + "\nEm caso de error 'Gone', feche e abra novamente o BADownloader");
                 // await this.RetryManageDownloader( this._urlsCollectionFailed );
+                Console.WriteLine("Opção ainda não implementada, inicie novamente o programa.");
             }
         }
 
@@ -107,22 +111,22 @@ namespace BADownloader.App
         /// Baixa os episódios do anime
         /// </summary>
         /// <returns>Task</returns>
-        private async Task ManageDownloader()
+        private async Task DownloadAnime()
         {
             Console.CursorVisible = false;
 
             List<Task> tasks = new();
-            var animeCollection = this._anime.AnimeCollection;
+            var ACollection = this._anime.ACollection;
 
             Console.Clear();
             int current_cursor_position_top = 0;
             Console.SetCursorPosition(0, 0);
 
-            for ( int i = this._anime.Index; i < animeCollection.Count; )
+            for ( int i = this._anime.Index; i < ACollection.Count; )
             {
                 for ( int j = 0; j < this._taskDownload; j++ )
                 {
-                    if ( i > animeCollection.Count )
+                    if ( i > ACollection.Count )
                         break;
 
                     await Task.Delay(TimeSpan.FromSeconds(3));
@@ -130,7 +134,7 @@ namespace BADownloader.App
                     // Pega o url de download do episódio do anime,
                     // e então pega o link direto implementado na classe
                     // do site.
-                    var episodeurl = animeCollection.GetAnimeInfo(i).URLDownload;
+                    var episodeurl = ACollection.GetAnimeInfo(i).URLDownload;
                     var downloadlink = await this._anime.GetSourceLink(episodeurl);
 
                     // Progresso do download.
@@ -176,7 +180,7 @@ namespace BADownloader.App
         //     {
         //         for ( int j = 0; j < this._taskDownload; j++ )
         //         {
-        //             if ( i > this._anime.AnimeCollection.Count )
+        //             if ( i > this._anime.ACollection.Count )
         //                 break;
 
         //             await Task.Delay(TimeSpan.FromSeconds(3));
@@ -190,9 +194,9 @@ namespace BADownloader.App
         //     }
         // }
 
-        public void Dispose()
-        {
-            this._urlsCollectionFailed.Clear();
-        }
+        // public void Dispose()
+        // {
+
+        // }
     }
 }

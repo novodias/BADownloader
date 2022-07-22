@@ -4,8 +4,9 @@ namespace MinimalLog
 {
     internal class Logger : ILogger
     {
-        public Logging[]? Logtypes { get; init; }
-        readonly FileStream? _filestream;
+        private readonly static object _writeLock = new();
+        internal Logging[]? Logtypes { get; init; }
+        readonly FileInfo? _fileInfo;
         readonly bool _writable;
 
         internal Logger(IEnumerable<Logging>? logtypes = null, bool writable = false)
@@ -17,8 +18,8 @@ namespace MinimalLog
                 string date = $"{DateTime.Now.ToShortDateString().Replace('/', '-')}";
                 string path = $"log-{date}.txt";
                 path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
-                this._filestream = File.Create(path);
-                this._filestream.Close();
+                this._fileInfo = new(path);
+                if ( !_fileInfo.Exists ) _fileInfo.Create();
             }
 
             if ( logtypes is not null )
@@ -56,28 +57,26 @@ namespace MinimalLog
 
         internal void Write(ReadOnlySpan<char> log)
         {
-            if ( this._writable && (this._filestream is not null && this._filestream.CanWrite) )
+            lock(_writeLock)
             {
-                using var sw = new StreamWriter(this._filestream, Encoding.UTF8);
+                if ( this._writable && this._fileInfo is not null && this._fileInfo.Exists )
+                {
+                    using var sw = new StreamWriter(this._fileInfo.OpenWrite(), Encoding.UTF8);
 
-                sw.WriteLine(log);
-                sw.Flush();
+                    sw.WriteLine(log);
+                    sw.Flush();
+                }
             }
-        }
-
-        internal void Dispose()
-        {
-            this._filestream?.Dispose();
         }
 
     }
 
     public enum Logging
     {
-        Debug,
-        Warning,
-        Information,
-        Error
+        Information = 0,
+        Debug = 1,
+        Warning = 2,
+        Error = 3,
     }
     
 }
